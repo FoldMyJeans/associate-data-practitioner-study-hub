@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The ML Map</title>
+<style>
+:root{
+  --bg:#f7f8fa; --panel:#ffffff; --ink:#15181d; --ink-soft:#4a5260; --ink-faint:#79818f;
+  --line:#e2e5ea;
+  --sup:#2563eb; --unsup:#7c3aed; --rl:#d97706; --dl:#0d9488; --gen:#db2777; --cross:#64748b;
+  --sup-bg:#eff4ff; --unsup-bg:#f5f1ff; --rl-bg:#fff7ed; --dl-bg:#effcfa; --gen-bg:#fdf2f8; --cross-bg:#f1f5f9;
+  --code-bg:#f1f3f7;
+  --radius:10px;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --display:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1116; --panel:#161a21; --ink:#e8eaee; --ink-soft:#a8b0bd; --ink-faint:#79818f;
+    --line:#262c36;
+    --sup:#60a5fa; --unsup:#a78bfa; --rl:#fbbf24; --dl:#2dd4bf; --gen:#f472b6; --cross:#94a3b8;
+    --sup-bg:#131c2e; --unsup-bg:#1c1830; --rl-bg:#2a1f10; --dl-bg:#0f2523; --gen-bg:#2a1322; --cross-bg:#1a1f27;
+    --code-bg:#1d222a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1116; --panel:#161a21; --ink:#e8eaee; --ink-soft:#a8b0bd; --ink-faint:#79818f;
+  --line:#262c36;
+  --sup:#60a5fa; --unsup:#a78bfa; --rl:#fbbf24; --dl:#2dd4bf; --gen:#f472b6; --cross:#94a3b8;
+  --sup-bg:#131c2e; --unsup-bg:#1c1830; --rl-bg:#2a1f10; --dl-bg:#0f2523; --gen-bg:#2a1322; --cross-bg:#1a1f27;
+  --code-bg:#1d222a;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px 120px}
+
+header.top{padding:56px 0 28px;border-bottom:1px solid var(--line);margin-bottom:22px}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(30px,5vw,44px);line-height:1.1;margin:0 0 12px;letter-spacing:-.02em}
+.sub{color:var(--ink-soft);font-size:17px;max-width:66ch;margin:0 0 10px}
+.meta{color:var(--ink-faint);font-size:13px;margin-top:14px}
+
+.controls{position:sticky;top:0;z-index:50;background:var(--bg);padding:12px 0;border-bottom:1px solid var(--line);margin-bottom:28px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#q{flex:1;min-width:200px;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);color:var(--ink);font-size:15px;font-family:inherit}
+#q:focus{outline:2px solid var(--sup);outline-offset:1px;border-color:transparent}
+.btn{padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);color:var(--ink-soft);font-size:14px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.btn:hover{color:var(--ink);border-color:var(--ink-faint)}
+#hits{font-size:13px;color:var(--ink-faint);padding-left:2px}
+
+.orient{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:34px}
+.orient h2{font-family:var(--display);font-weight:600;margin:0 0 6px;font-size:19px}
+.orient p{margin:0 0 16px;color:var(--ink-soft);font-size:15px}
+.nest{display:flex;flex-wrap:wrap;gap:0;font-size:13.5px}
+.nest span{padding:8px 13px;border:1px solid var(--line);border-right:0;background:var(--cross-bg);flex:1;min-width:170px}
+.nest span:last-child{border-right:1px solid var(--line)}
+.n1{color:var(--cross)} .n2{color:var(--sup)} .n3{color:var(--dl)} .n4{color:var(--gen)}
+
+.toc{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:8px;margin-bottom:44px}
+.toc a{display:block;padding:11px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);color:var(--ink);text-decoration:none;font-size:14px}
+.toc a:hover{border-color:var(--ink-faint)}
+.toc a span{display:block;color:var(--ink-faint);font-size:12.5px;margin-top:2px}
+
+section{margin-bottom:56px;scroll-margin-top:78px}
+h2.sec{font-size:12.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-faint);margin:0 0 6px;font-weight:600}
+h3.sect{font-family:var(--display);font-weight:600;font-size:26px;margin:0 0 10px;letter-spacing:-.01em}
+.lede{color:var(--ink-soft);margin:0 0 26px;max-width:74ch;font-size:15.5px}
+
+details.branch{border-left:2px solid var(--line);margin:0 0 4px;padding-left:18px}
+details.branch>summary{
+  font-family:var(--display);cursor:pointer;list-style:none;padding:9px 0;font-weight:600;font-size:16.5px;
+  display:flex;align-items:center;gap:9px;margin-left:-18px;padding-left:18px;position:relative;
+}
+details.branch>summary::-webkit-details-marker{display:none}
+details.branch>summary::before{
+  content:"";position:absolute;left:-6px;top:50%;width:9px;height:9px;border-radius:50%;
+  background:var(--line);transform:translateY(-50%);
+}
+details.branch[open]>summary::before{background:currentColor}
+details.branch>summary .cnt{font-weight:400;font-size:12.5px;color:var(--ink-faint);margin-left:auto;font-family:var(--mono)}
+.branch-body{padding:6px 0 16px}
+.branch-note{color:var(--ink-soft);font-size:14.5px;margin:0 0 14px;max-width:72ch}
+
+.p-sup{color:var(--sup)} .p-unsup{color:var(--unsup)} .p-rl{color:var(--rl)}
+.p-dl{color:var(--dl)} .p-gen{color:var(--gen)} .p-cross{color:var(--cross)}
+details.branch.p-sup{border-left-color:var(--sup)} details.branch.p-unsup{border-left-color:var(--unsup)}
+details.branch.p-rl{border-left-color:var(--rl)} details.branch.p-dl{border-left-color:var(--dl)}
+details.branch.p-gen{border-left-color:var(--gen)} details.branch.p-cross{border-left-color:var(--cross)}
+
+.node{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:15px 17px;margin-bottom:9px}
+.node h4{font-family:var(--display);margin:0 0 3px;font-size:16.5px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;color:var(--ink)}
+.tag{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2.5px 7px;border-radius:5px;background:var(--cross-bg);color:var(--cross)}
+.tag.sup{background:var(--sup-bg);color:var(--sup)} .tag.unsup{background:var(--unsup-bg);color:var(--unsup)}
+.tag.rl{background:var(--rl-bg);color:var(--rl)} .tag.dl{background:var(--dl-bg);color:var(--dl)}
+.tag.gen{background:var(--gen-bg);color:var(--gen)}
+.what{margin:0 0 10px;color:var(--ink-soft);font-size:14.5px}
+.ex{margin:0;padding:11px 13px;background:var(--code-bg);border-radius:8px;font-size:14px;color:var(--ink)}
+.ex b{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);display:block;margin-bottom:4px;font-weight:600}
+.tell{margin:9px 0 0;font-size:13.5px;color:var(--ink-soft);padding-left:11px;border-left:2px solid var(--line)}
+.tell b{color:var(--ink);font-weight:600}
+code{font-family:var(--mono);font-size:.9em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+
+.callout{background:var(--sup-bg);border:1px solid var(--line);border-radius:8px;padding:15px 17px;margin:0 0 22px;font-size:14.5px}
+.callout.warn{background:var(--rl-bg)}
+.hide{display:none !important}
+footer{border-top:1px solid var(--line);padding-top:22px;color:var(--ink-faint);font-size:13px}
+@media(max-width:600px){
+  details.branch{padding-left:14px}
+  details.branch>summary{margin-left:-14px;padding-left:14px;font-size:15.5px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>The ML Map</h1>
+  <p class="sub">Every family of machine learning model, from the widest category down to the individual algorithm, each with one worked example that assumes no prior knowledge.</p>
+  <p class="sub">Read top to bottom once for the shape. Come back and use the search box when a name turns up somewhere and you want to place it.</p>
+  <p class="meta">Built 2026-09-20 · companion to the Associate Data Practitioner notes · the last section maps all of this onto Google Cloud products</p>
+</header>
+
+<div class="controls">
+  <input id="q" type="search" placeholder="Search any name, try forest, PCA, churn, attention" autocomplete="off">
+  <button class="btn" id="openAll">Expand all</button>
+  <button class="btn" id="closeAll">Collapse all</button>
+  <button class="btn" id="theme">Theme</button>
+  <span id="hits"></span>
+</div>
+
+<div class="orient">
+  <h2>The one nesting to memorise</h2>
+  <p>Each box sits inside the one before it. Nearly every term in this file lives somewhere along this chain.</p>
+  <div class="nest">
+    <span class="n1"><b>Artificial Intelligence</b><br>anything mimicking human intelligence</span>
+    <span class="n2"><b>Machine Learning</b><br>learns its rules from data</span>
+    <span class="n3"><b>Deep Learning</b><br>learns using layered neural networks</span>
+    <span class="n4"><b>Generative AI</b><br>creates new content</span>
+  </div>
+  <p style="margin:16px 0 0;font-size:14px;color:var(--ink-faint)">The exception: a few ideas cut across every box rather than sitting inside one: ensembles, evaluation metrics, overfitting. Those get their own sections.</p>
+</div>
+
+<nav class="toc">
+  <a href="#learn">1 · How a model learns<span>the five paradigms</span></a>
+  <a href="#sup">2 · Supervised<span>regression and classification</span></a>
+  <a href="#unsup">3 · Unsupervised<span>clustering, PCA, rules</span></a>
+  <a href="#semi">4 · Semi- and self-supervised<span>where LLMs come from</span></a>
+  <a href="#rl">5 · Reinforcement learning<span>learning by consequence</span></a>
+  <a href="#ens">6 · Ensembles<span>many models, one answer</span></a>
+  <a href="#dl">7 · Deep learning<span>the architectures</span></a>
+  <a href="#gen">8 · Generative AI<span>LLMs, diffusion, agents</span></a>
+  <a href="#task">9 · Specialist families<span>time series, recommenders</span></a>
+  <a href="#vocab">10 · Surrounding vocabulary<span>terms you will hit constantly</span></a>
+  <a href="#tell">11 · Telling them apart<span>decision shortcuts</span></a>
+  <a href="#gcp">12 · On Google Cloud<span>what runs where</span></a>
+</nav>
+
+<!-- ============ 1 ============ -->
+<section id="learn">
+  <h2 class="sec">Orientation</h2>
+  <h3 class="sect">How a model learns</h3>
+  <p class="lede">Before any model name matters, there is a prior question: what did the machine have to learn from? The answer splits all of machine learning into five paradigms. Every algorithm later in this file belongs to one of them.</p>
+
+  <details class="branch p-sup" open>
+    <summary><span>Supervised learning</span><span class="cnt">labelled data</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">You give the machine examples that already carry the right answer. It learns the relationship between the inputs and that answer, so it can answer new cases.</p>
+      <div class="node">
+        <h4>The shape of it <span class="tag sup">paradigm</span></h4>
+        <p class="what">Rows in, one known answer column, learn the mapping.</p>
+        <p class="ex"><b>Example</b>You have 50,000 past insurance claims. For each one you already know whether it turned out to be fraudulent. You hand the machine all 50,000 rows <em>with</em> the fraud yes/no column. It learns which combinations of claim amount, time since policy start, and repair shop tend to go with fraud. Tomorrow a new claim arrives with no answer attached, and the model gives you one.</p>
+        <p class="tell"><b>Recognise it by:</b> someone had to sit down and label the training data, or history supplied the labels for free (the sale either happened or it didn't).</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-unsup">
+    <summary><span>Unsupervised learning</span><span class="cnt">no labels</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">No answers exist. The machine looks for structure that is already sitting in the data and tells you what it found.</p>
+      <div class="node">
+        <h4>The shape of it <span class="tag unsup">paradigm</span></h4>
+        <p class="what">Rows in, no answer column, get back groups, rules, or a simplified version of the data.</p>
+        <p class="ex"><b>Example</b>Same insurer, different question: nobody has ever categorised their customers. You hand over the 50,000 rows with no labels at all and ask the machine to group customers that resemble each other. It comes back with four groups. Looking at them you realise group 3 is "young drivers with expensive cars who claim often". Nobody told the machine that category existed, it was implied by the data.</p>
+        <p class="tell"><b>Recognise it by:</b> there is no right answer to check against. You judge the result by whether it is useful, not by whether it is correct.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-cross">
+    <summary><span>Semi-supervised learning</span><span class="cnt">a few labels</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">A small labelled pile and a huge unlabelled one. The model uses the small pile to make sense of the big one.</p>
+      <div class="node">
+        <h4>The shape of it <span class="tag">paradigm</span></h4>
+        <p class="what">Labelling is expensive, so label a little and let the model exploit the rest.</p>
+        <p class="ex"><b>Example</b>A hospital has 100,000 chest X-rays but only 500 have been read and annotated by a radiologist, because that costs real specialist hours. A semi-supervised model learns from the 500, makes guesses on the other 99,500, keeps only the guesses it is very confident about, and retrains on the expanded set.</p>
+        <p class="tell"><b>Recognise it by:</b> the phrase "labelling is expensive" is always somewhere in the problem statement.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-cross">
+    <summary><span>Self-supervised learning</span><span class="cnt">labels from the data itself</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">Nobody labels anything, but the data generates its own answers by hiding part of itself. This is how every large language model is trained.</p>
+      <div class="node">
+        <h4>The shape of it <span class="tag">paradigm</span></h4>
+        <p class="what">Cover up part of the input and make the model reconstruct it. The hidden part <em>is</em> the label.</p>
+        <p class="ex"><b>Example</b>Take the sentence "the truck parked outside the stadium". Hide the last word and ask the model to predict it. The correct answer was already sitting in the text, so no human had to write it down. Do this a trillion times across the internet and the model ends up with a working model of language. That is literally how Gemini and every other LLM is pre-trained.</p>
+        <p class="tell"><b>Recognise it by:</b> a task invented purely to create labels out of unlabelled data. It looks unsupervised from the outside and supervised from the inside.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-rl">
+    <summary><span>Reinforcement learning</span><span class="cnt">rewards, not answers</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">No dataset of right answers. An agent acts, the environment scores it, and it adjusts to earn more points next time.</p>
+      <div class="node">
+        <h4>The shape of it <span class="tag rl">paradigm</span></h4>
+        <p class="what">Try something, see the consequence, get better. Learning by trial and error, formalised.</p>
+        <p class="ex"><b>Example</b>A warehouse robot must get from the door to a shelf. Nobody has a dataset of correct routes. The robot moves, and the environment gives it points: −1 for every second elapsed, −100 for hitting a wall, +50 for reaching the shelf. After thousands of attempts it has learned a route nobody wrote down. The key difference from supervised learning: nobody ever told it the <em>correct</em> move, only whether things went well afterwards.</p>
+        <p class="tell"><b>Recognise it by:</b> a sequence of decisions where the consequences arrive later, and the words "reward", "agent", "environment", "policy".</p>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 2 ============ -->
+<section id="sup">
+  <h2 class="sec">The workhorse</h2>
+  <h3 class="sect">Supervised learning</h3>
+  <p class="lede">The workhorse of business machine learning. It splits cleanly in two, and the split is decided by one question only: is the thing you are predicting a number, or a category?</p>
+
+  <div class="callout">A number to predict means <b>regression</b>. A category to predict means <b>classification</b>. Same algorithms often do both (a decision tree will happily do either), but the problem type decides the metric you judge it by and the version of the algorithm you use.</div>
+
+  <details class="branch p-sup" open>
+    <summary><span>Regression, predicting a number</span><span class="cnt">9 models</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">The output is a continuous quantity: dollars, hours, degrees, counts. "How much" or "how many".</p>
+
+      <div class="node">
+        <h4>Linear regression <span class="tag sup">the baseline</span></h4>
+        <p class="what">Draws the single straight line that best fits the data, then reads predictions off that line.</p>
+        <p class="ex"><b>Example</b>You have 300 houses with their floor area and selling price. Linear regression finds one formula, price = 180,000 + 240 × square feet. A new 1,500 sq ft house is predicted at 180,000 + 360,000 = $540,000. Every extra square foot is worth exactly $240, always, regardless of anything else. That rigidity is both its weakness and why anyone can read the result.</p>
+        <p class="tell"><b>Start here always.</b> If a fancier model can't beat a linear regression by a worthwhile margin, ship the linear regression. You can explain it to a finance director in one sentence.</p>
+      </div>
+
+      <div class="node">
+        <h4>Polynomial regression <span class="tag sup">curved line</span></h4>
+        <p class="what">The same idea, but the line is allowed to bend.</p>
+        <p class="ex"><b>Example</b>Ice cream sales against temperature. From 10°C to 30°C sales climb steeply, but above 35°C people stay indoors and sales flatten and fall. A straight line can't represent "rises then falls", a curve can. Polynomial regression fits that arch.</p>
+        <p class="tell"><b>The danger:</b> allow enough bends and the curve will thread perfectly through every training point and be useless on new ones. That is overfitting in its most visual form.</p>
+      </div>
+
+      <div class="node">
+        <h4>Ridge, Lasso, Elastic Net <span class="tag sup">regularised</span></h4>
+        <p class="what">Linear regression with a penalty that punishes the model for leaning too hard on any one input.</p>
+        <p class="ex"><b>Example</b>You predict employee attrition risk from 200 HR columns. Plain linear regression latches onto noise, it decides "badge number" matters. Ridge shrinks every coefficient toward zero, so no single column dominates. Lasso goes further and pushes weak coefficients to exactly zero, effectively deleting those columns; you end up with 12 columns that matter out of 200. Elastic Net is both penalties combined.</p>
+        <p class="tell"><b>Lasso is a feature selector.</b> When you hear "the model chose its own features", it is usually Lasso.</p>
+      </div>
+
+      <div class="node">
+        <h4>Decision tree regressor <span class="tag sup">rules</span></h4>
+        <p class="what">A flowchart of yes/no questions. Each leaf of the tree holds an average value.</p>
+        <p class="ex"><b>Example</b>Predicting a used car's price. The tree asks: is it older than 8 years? Yes → is the mileage over 150,000? Yes → predict $3,200 (the average of all training cars that landed in that leaf). It is a series of splits, not a formula, so there is no single "per mile" rate, because the relationship can change shape in each branch.</p>
+        <p class="tell"><b>Fully readable.</b> You can print the tree and hand it to a person. One tree on its own is usually weak; its value is as a building block for forests and boosting.</p>
+      </div>
+
+      <div class="node">
+        <h4>Random forest regressor <span class="tag sup">bagging</span></h4>
+        <p class="what">Hundreds of decision trees, each trained on a random slice of the rows and columns. Their predictions get averaged.</p>
+        <p class="ex"><b>Example</b>Forecasting monthly spare parts demand. One tree might fixate on a single odd month in the training data. Build 500 trees, each seeing a different random two-thirds of the rows and a random subset of columns, and average them, the individual quirks cancel out and what survives is the real signal. Almost always better than any single tree.</p>
+        <p class="tell"><b>Trees are built independently and in parallel.</b> That is the difference from boosting, below.</p>
+      </div>
+
+      <div class="node">
+        <h4>Gradient boosted trees, XGBoost, LightGBM, CatBoost <span class="tag sup">the tabular champion</span></h4>
+        <p class="what">Trees built one after another, where each new tree specialises in fixing the errors the previous ones made.</p>
+        <p class="ex"><b>Example</b>Predicting customer lifetime value. Tree 1 predicts $400 for everyone and is badly wrong for high spenders. Tree 2 is trained not on the value but on tree 1's <em>mistakes</em>, and learns "add $600 when the customer has more than 3 orders". Tree 3 corrects what remains. After 500 rounds of this the combined model is far sharper than any single tree. XGBoost, LightGBM and CatBoost are three implementations of this idea. LightGBM is the fastest on wide data, CatBoost handles text-like categorical columns best.</p>
+        <p class="tell"><b>The default winner on spreadsheet-shaped data.</b> For rows and columns, which is most business data, boosted trees usually beat neural networks. Neural networks win on images, audio and text.</p>
+      </div>
+
+      <div class="node">
+        <h4>Support vector regression (SVR) <span class="tag sup">tube fitting</span></h4>
+        <p class="what">Fits a tube around the data and only penalises points that fall outside it.</p>
+        <p class="ex"><b>Example</b>Predicting machine temperature from 40 sensor readings, where you genuinely don't care about errors under 2°C. SVR draws a band of tolerance and ignores everything inside it, concentrating entirely on the points that miss badly. Strong when you have many columns and relatively few rows.</p>
+      </div>
+
+      <div class="node">
+        <h4>k-nearest neighbours regressor <span class="tag sup">lazy</span></h4>
+        <p class="what">Doesn't learn anything up front. When asked, it finds the k most similar past rows and averages their answers.</p>
+        <p class="ex"><b>Example</b>Pricing a flat. Find the 5 most similar past sales (similar size, floor, postcode) and average their prices. That is the entire algorithm. Nothing is "trained"; the whole dataset <em>is</em> the model, which is why it is called a lazy learner.</p>
+        <p class="tell"><b>Breaks down with many columns.</b> With 200 columns everything is roughly equally far from everything else, and "nearest" stops meaning anything. That is the curse of dimensionality.</p>
+      </div>
+
+      <div class="node">
+        <h4>Neural network regressor <span class="tag sup">learned features</span></h4>
+        <p class="what">Layers of weighted connections that learn their own intermediate representations before producing a number.</p>
+        <p class="ex"><b>Example</b>Predicting energy demand for a city from weather, calendar, satellite cloud imagery and social event feeds all at once. A neural network can consume mixed and unstructured inputs and learn its own internal combinations of them. On a plain table of 30 numeric columns, boosted trees would usually beat it with far less effort.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-sup">
+    <summary><span>Classification, predicting a category</span><span class="cnt">8 models</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">The output is a class label: yes/no, spam/not spam, one of twelve product categories. "Which one".</p>
+
+      <div class="callout">Three sub-shapes worth naming. <b>Binary</b> = two possible answers (fraud or not). <b>Multiclass</b> = one answer from many (which of 8 defect types). <b>Multi-label</b> = several answers can be true at once (this news article is about both Politics and Economics).</div>
+
+      <div class="node">
+        <h4>Logistic regression <span class="tag sup">the baseline</span></h4>
+        <p class="what">Despite the name, this is a classifier. It outputs a probability between 0 and 1, which you then cut at a threshold.</p>
+        <p class="ex"><b>Example</b>Will this customer churn next month? The model returns 0.82. With a 0.5 cut-off you label them "will churn". Raise the cut-off to 0.9 and you flag fewer people but are more often right about them. The output is a probability, and moving the threshold is a business decision, not a modelling one.</p>
+        <p class="tell"><b>The name is a trap.</b> Logistic regression does <em>classification</em>. Linear regression does regression.</p>
+      </div>
+
+      <div class="node">
+        <h4>Naive Bayes <span class="tag sup">probability counting</span></h4>
+        <p class="what">Counts how often each feature appeared with each class, then multiplies the probabilities together.</p>
+        <p class="ex"><b>Example</b>Spam filtering. In your training emails the word "invoice" appeared in 3% of legitimate mail and 40% of spam. Multiply that evidence across every word in a new email and you get a spam probability. It is called "naive" because it pretends the words are independent of each other, "free" and "money" are treated as unrelated, which is obviously false, and yet it still works remarkably well and trains in seconds.</p>
+      </div>
+
+      <div class="node">
+        <h4>k-nearest neighbours classifier <span class="tag sup">lazy</span></h4>
+        <p class="what">Find the k most similar past rows and take a majority vote of their labels.</p>
+        <p class="ex"><b>Example</b>A new support ticket arrives. Find the 7 most similar past tickets; 5 of them were routed to Networking and 2 to Hardware. Route it to Networking. No training step at all.</p>
+      </div>
+
+      <div class="node">
+        <h4>Decision tree classifier <span class="tag sup">rules</span></h4>
+        <p class="what">A flowchart of questions ending in a class label rather than a number.</p>
+        <p class="ex"><b>Example</b>Loan approval. Is income above $50k? Yes → is existing debt below $20k? Yes → approve. It produces a rule you can print, audit, and defend to a regulator, which is exactly why regulated industries keep using trees even when a black-box model would score slightly better.</p>
+      </div>
+
+      <div class="node">
+        <h4>Random forest classifier <span class="tag sup">bagging</span></h4>
+        <p class="what">Many trees, each on a random slice, voting on the class.</p>
+        <p class="ex"><b>Example</b>Classifying network traffic as normal or intrusion. 300 trees each see a different random subset of the connection logs and each votes; the majority wins. Robust, hard to overfit, and it hands you a feature importance ranking for free, you can see that packet size mattered more than time of day.</p>
+      </div>
+
+      <div class="node">
+        <h4>Gradient boosted trees (classification) <span class="tag sup">the tabular champion</span></h4>
+        <p class="what">Sequential trees, each correcting the errors of those before it, ending in a class probability.</p>
+        <p class="ex"><b>Example</b>Predicting which of 200,000 customers will respond to a campaign. The first trees get the easy cases right; later trees spend their effort on the hard, ambiguous customers the earlier ones got wrong. This is the model that wins most tabular data competitions.</p>
+      </div>
+
+      <div class="node">
+        <h4>Support vector machine (SVM) <span class="tag sup">boundary drawing</span></h4>
+        <p class="what">Finds the boundary that separates the classes with the widest possible margin between them.</p>
+        <p class="ex"><b>Example</b>Separating two grades of steel from 60 lab measurements each. SVM doesn't care about points far inside their own group, only about the borderline cases near the frontier, the "support vectors". With the kernel trick it can also draw curved boundaries by mathematically projecting the data into a higher dimension where a straight boundary works.</p>
+        <p class="tell"><b>Strong on small, wide datasets</b>: few rows, many columns. Slow and memory-hungry on very large datasets.</p>
+      </div>
+
+      <div class="node">
+        <h4>Neural network classifier <span class="tag sup">learned features</span></h4>
+        <p class="what">Layers that learn their own representation of the input before assigning a class.</p>
+        <p class="ex"><b>Example</b>Deciding whether a photo of a weld contains a crack. Nobody can write down the rule for "looks cracked" as columns in a table, so the network learns its own internal features, edges, then textures, then crack-shaped patterns, directly from the pixels.</p>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 3 ============ -->
+<section id="unsup">
+  <h2 class="sec">Finding structure</h2>
+  <h3 class="sect">Unsupervised learning</h3>
+  <p class="lede">No answers anywhere. Four distinct jobs live here, and they are genuinely different jobs, grouping rows, shrinking columns, finding co-occurrence rules, and spotting the odd one out.</p>
+
+  <details class="branch p-unsup" open>
+    <summary><span>Clustering, grouping similar rows</span><span class="cnt">5 models</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">Put rows into groups where members resemble each other more than they resemble outsiders. The groups have no names until a human looks at them and invents one.</p>
+
+      <div class="node">
+        <h4>k-means <span class="tag unsup">the default</span></h4>
+        <p class="what">You state how many groups you want (k). It places k centre points and shuffles them until each row belongs to its nearest centre.</p>
+        <p class="ex"><b>Example</b>Segment 40,000 retail customers on spend, visit frequency and basket size. You ask for k=4. The algorithm returns four groups; you inspect them and name them yourself: "weekly small baskets", "monthly big shops", "lapsed", "high value". The machine found the boundaries. The names are entirely your interpretation.</p>
+        <p class="tell"><b>You must choose k in advance,</b> which is its main annoyance. It also assumes groups are roughly round and similarly sized.</p>
+      </div>
+
+      <div class="node">
+        <h4>Hierarchical clustering <span class="tag unsup">nested</span></h4>
+        <p class="what">Builds a tree of groups, every row starts alone, then the closest pair merges, repeatedly, until everything is one group.</p>
+        <p class="ex"><b>Example</b>Grouping 80 product SKUs by sales pattern. The output is a dendrogram, a tree diagram. Cut it high and you get 3 broad families; cut it low and you get 15 fine-grained ones. You decide the number of groups <em>after</em> seeing the structure, which is the advantage over k-means.</p>
+      </div>
+
+      <div class="node">
+        <h4>DBSCAN <span class="tag unsup">density based</span></h4>
+        <p class="what">Groups are dense regions of points. Anything in a sparse region is labelled noise and put in no group at all.</p>
+        <p class="ex"><b>Example</b>Clustering GPS pings from delivery vans to find genuine stopping locations. Dense clumps of pings are real stops. A handful of scattered pings on a motorway are noise, and DBSCAN says so instead of forcing them into a group. It also finds long, snaking shapes that k-means cannot, because it never assumes a group is round.</p>
+        <p class="tell"><b>The only clusterer here that can say "this point belongs to nothing".</b> You don't tell it how many groups to find.</p>
+      </div>
+
+      <div class="node">
+        <h4>Gaussian mixture model (GMM) <span class="tag unsup">soft grouping</span></h4>
+        <p class="what">Like k-means, but each row gets a probability of belonging to each group rather than being assigned to exactly one.</p>
+        <p class="ex"><b>Example</b>Customer segmentation where a person is genuinely 70% "bargain hunter" and 30% "premium buyer". k-means would force them into one bucket and lose that. A GMM keeps both numbers, which matters if you are going to target them with messaging.</p>
+      </div>
+
+      <div class="node">
+        <h4>Mean shift <span class="tag unsup">peak seeking</span></h4>
+        <p class="what">Walks points uphill toward the densest nearby region; wherever many points converge becomes a group.</p>
+        <p class="ex"><b>Example</b>Finding the distinct colour regions in an image for compression. You don't say how many colours; the algorithm discovers the natural peaks in the colour distribution.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-unsup">
+    <summary><span>Dimensionality reduction, shrinking columns</span><span class="cnt">5 methods</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">Take many columns and produce fewer, keeping as much of the information as possible. Used to speed up models, to remove redundancy, and to make data drawable in two dimensions.</p>
+
+      <div class="callout">This is the one family here that is a <b>preparation step</b> rather than an answer. It produces better inputs for another model, or a picture for a human. It does not predict anything by itself.</div>
+
+      <div class="node">
+        <h4>Principal component analysis (PCA) <span class="tag unsup">the default</span></h4>
+        <p class="what">Finds new combined axes that capture the most variation, and lets you keep only the first few.</p>
+        <p class="ex"><b>Example</b>A fitness dataset with height, weight, chest, waist, hip, shoe size and arm length. These seven columns mostly say one thing, overall body size, with a second, weaker theme of build shape. PCA replaces them with two new columns: "component 1" (size) and "component 2" (shape). You dropped 5 columns and kept nearly all the information. The cost: "component 1" is a blend, so it has no plain-English name any more.</p>
+        <p class="tell"><b>Linear only.</b> It can only build straight-line combinations of your existing columns.</p>
+      </div>
+
+      <div class="node">
+        <h4>t-SNE <span class="tag unsup">for pictures</span></h4>
+        <p class="what">Squashes many dimensions down to two for plotting, preserving which points were near each other.</p>
+        <p class="ex"><b>Example</b>You have 5,000 support tickets each converted into a 768-number embedding. Plotting 768 dimensions is impossible. t-SNE maps them to an x,y scatter plot where similar tickets sit together, and you can see with your eyes that there are five topic islands.</p>
+        <p class="tell"><b>For looking, not for feeding.</b> Distances between the resulting clusters are not meaningful, and it is slow. Never use its output as input to another model.</p>
+      </div>
+
+      <div class="node">
+        <h4>UMAP <span class="tag unsup">for pictures, faster</span></h4>
+        <p class="what">Same purpose as t-SNE, faster, and better at preserving the large-scale structure as well as the local.</p>
+        <p class="ex"><b>Example</b>The same 5,000 tickets, but now 5 million log entries. t-SNE would take hours; UMAP handles it and keeps the relationships between the big clusters more faithfully. It has largely displaced t-SNE as the default choice.</p>
+      </div>
+
+      <div class="node">
+        <h4>SVD / matrix factorisation <span class="tag unsup">decomposition</span></h4>
+        <p class="what">Breaks one big table into a product of smaller ones that approximately reconstruct it.</p>
+        <p class="ex"><b>Example</b>A grid of 100,000 users by 20,000 films, almost entirely empty because nobody watches 20,000 films. SVD decomposes it into user preferences over ~50 hidden themes and film scores on those same themes. Multiply the two back together and you get a prediction for every empty cell. That is a recommendation engine.</p>
+      </div>
+
+      <div class="node">
+        <h4>Autoencoder <span class="tag unsup">neural, non-linear</span></h4>
+        <p class="what">A neural network trained to squeeze input through a narrow middle layer and reconstruct it on the other side. The narrow layer is the compressed version.</p>
+        <p class="ex"><b>Example</b>Feed 200 sensor readings from a turbine into a network that funnels them down to 10 numbers, then expands back to 200. If the output closely matches the input, those 10 numbers captured the essentials. Bonus use: when a <em>new</em> reading reconstructs badly, something unprecedented is happening, which makes an autoencoder a working anomaly detector.</p>
+        <p class="tell"><b>The non-linear PCA.</b> It can learn curved relationships PCA cannot. Available in BigQuery ML.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-unsup">
+    <summary><span>Association rule learning, what goes with what</span><span class="cnt">3 algorithms</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">Finds items that show up together more often than chance would explain. Classically called market basket analysis.</p>
+
+      <div class="node">
+        <h4>Apriori <span class="tag unsup">the classic</span></h4>
+        <p class="what">Counts item combinations, discarding any combination too rare to matter before extending it.</p>
+        <p class="ex"><b>Example</b>Across 2 million supermarket receipts it finds: of baskets containing nappies, 34% also contain beer, which is four times the rate of beer in baskets overall. The rule is "nappies → beer". Three numbers define it: <b>support</b> (how often the combination appears at all), <b>confidence</b> (how often B appears given A), <b>lift</b> (how much more often than chance). Lift above 1 means a real association.</p>
+        <p class="tell"><b>Correlation, never causation.</b> The rule does not say buying nappies causes beer purchases, only that they travel together.</p>
+      </div>
+
+      <div class="node">
+        <h4>FP-Growth <span class="tag unsup">faster</span></h4>
+        <p class="what">The same output as Apriori, but it compresses the transactions into a tree first instead of repeatedly rescanning them.</p>
+        <p class="ex"><b>Example</b>The same 2 million receipts. Apriori passes over the data once per combination size and gets slow. FP-Growth builds one compact tree and reads the rules out of it, typically an order of magnitude faster. Same rules, better engineering.</p>
+      </div>
+
+      <div class="node">
+        <h4>Eclat <span class="tag unsup">set intersection</span></h4>
+        <p class="what">Stores, for each item, the list of transactions containing it, and intersects those lists.</p>
+        <p class="ex"><b>Example</b>To test "bread and butter", intersect the set of receipts containing bread with the set containing butter. The size of the overlap is the support. Efficient when the data is a long thin list of transaction IDs.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-unsup">
+    <summary><span>Anomaly detection, finding the odd one out</span><span class="cnt">4 methods</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">Identify records that don't resemble the rest. Usually unsupervised, because by definition you rarely have enough labelled examples of the rare thing.</p>
+
+      <div class="node">
+        <h4>Isolation Forest <span class="tag unsup">the default</span></h4>
+        <p class="what">Splits data randomly and measures how few splits it takes to isolate each point. Weird points isolate quickly.</p>
+        <p class="ex"><b>Example</b>1.2 million card transactions. A $4 coffee sits in a dense crowd of similar transactions and takes many random splits to separate out. A $9,400 purchase at 4am in a foreign country gets isolated in two or three splits. Fewer splits means more anomalous. That is the entire scoring mechanism, and it is fast on large data.</p>
+        <p class="tell">Useful for security logs: the same logic flags the login that doesn't resemble any other login.</p>
+      </div>
+
+      <div class="node">
+        <h4>One-class SVM <span class="tag unsup">boundary</span></h4>
+        <p class="what">Learns a boundary around what normal looks like. Anything outside it is anomalous.</p>
+        <p class="ex"><b>Example</b>Train only on 6 months of healthy pump vibration readings. The model draws a envelope around normal. When a reading falls outside that envelope, the pump is behaving in a way it never has before, even though you have never seen a failure and so could never have labelled one.</p>
+      </div>
+
+      <div class="node">
+        <h4>Local outlier factor (LOF) <span class="tag unsup">relative density</span></h4>
+        <p class="what">Compares a point's local crowding to the crowding of its neighbours. Being in a sparse spot only counts as odd if the neighbours are in dense spots.</p>
+        <p class="ex"><b>Example</b>Rural and urban stores have naturally different footfall density. A quiet rural store isn't an anomaly because its neighbours are also quiet. A quiet store surrounded by busy ones is. LOF captures "odd relative to your own neighbourhood", which a global method misses.</p>
+      </div>
+
+      <div class="node">
+        <h4>Autoencoder reconstruction error <span class="tag unsup">neural</span></h4>
+        <p class="what">Train to rebuild normal data. Whatever rebuilds badly is abnormal.</p>
+        <p class="ex"><b>Example</b>Reconstruct network flow records. Ordinary HTTP traffic rebuilds almost perfectly. A novel exfiltration pattern the network has never encountered rebuilds with large error, and that error <em>is</em> the anomaly score.</p>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 4 ============ -->
+<section id="semi">
+  <h2 class="sec">Cheap labels</h2>
+  <h3 class="sect">Semi-supervised and self-supervised</h3>
+  <p class="lede">Two ways around the fact that labelling data by hand is slow and expensive. The second one turned out to be the foundation of every modern language model, which is why it is worth more than a footnote.</p>
+
+  <details class="branch p-cross" open>
+    <summary><span>Semi-supervised techniques</span><span class="cnt">3 methods</span></summary>
+    <div class="branch-body">
+      <div class="node">
+        <h4>Self-training / pseudo-labelling <span class="tag">bootstrapping</span></h4>
+        <p class="what">Train on the few labels, predict the rest, keep the confident predictions as if they were real labels, retrain.</p>
+        <p class="ex"><b>Example</b>500 support tickets categorised by hand out of 50,000. Train on the 500. Predict the other 49,500 and keep only the ~8,000 predicted with over 95% confidence. Retrain on 8,500 rows. Repeat. The risk is obvious and real: an early mistake gets treated as truth and compounds.</p>
+      </div>
+      <div class="node">
+        <h4>Label propagation <span class="tag">spreading</span></h4>
+        <p class="what">Build a graph connecting similar rows and let labels flow along the connections.</p>
+        <p class="ex"><b>Example</b>Three known fraudulent accounts in a network of transfers. Accounts heavily connected to those three inherit some fraud suspicion, which then spreads onward with diminishing strength. The label seeps through the network rather than being predicted row by row.</p>
+      </div>
+      <div class="node">
+        <h4>Co-training <span class="tag">two views</span></h4>
+        <p class="what">Two models look at different halves of the features and teach each other.</p>
+        <p class="ex"><b>Example</b>Classifying web pages. Model A reads only page text, model B reads only inbound link text. When A is confident about a page B finds unclear, A's answer becomes a training label for B, and vice versa. Each teaches the other using evidence the other couldn't see.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-cross">
+    <summary><span>Self-supervised techniques</span><span class="cnt">3 methods</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">The machine manufactures its own labels by hiding part of the data. This is the engine behind foundation models.</p>
+      <div class="node">
+        <h4>Next-token prediction <span class="tag gen">how LLMs are built</span></h4>
+        <p class="what">Given the text so far, predict the next chunk. Repeat across enormous volumes of text.</p>
+        <p class="ex"><b>Example</b>"The invoice was approved by the finance ___". The correct answer, "team", was already in the source document, so no annotation was needed. Doing this across trillions of words forces the model to learn grammar, facts, and reasoning patterns as a side effect of getting good at the guess. Gemini, Claude and GPT are all trained this way.</p>
+      </div>
+      <div class="node">
+        <h4>Masked language modelling <span class="tag gen">BERT style</span></h4>
+        <p class="what">Blank out random words in the middle and predict them using context from both sides.</p>
+        <p class="ex"><b>Example</b>"The [MASK] rejected the claim because the policy had lapsed." The model sees the words before <em>and</em> after, which makes it strong at understanding text but not at generating it left to right. This is why BERT-family models are used for search, classification and embeddings rather than chat.</p>
+        <p class="tell"><b>The split that explains the model zoo:</b> masked models <em>understand</em> (encoders), next-token models <em>generate</em> (decoders).</p>
+      </div>
+      <div class="node">
+        <h4>Contrastive learning, SimCLR, CLIP <span class="tag gen">same or different</span></h4>
+        <p class="what">Show pairs and train the model to pull matching things together and push mismatched things apart.</p>
+        <p class="ex"><b>Example</b>CLIP is shown 400 million image-and-caption pairs from the web. It learns to place a photo of a dog and the words "a photo of a dog" at nearly the same spot in a shared mathematical space. No one labelled anything. The pairing itself was the supervision. This is why you can now search images by typing a description.</p>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 5 ============ -->
+<section id="rl">
+  <h2 class="sec">Learning by consequence</h2>
+  <h3 class="sect">Reinforcement learning</h3>
+  <p class="lede">An agent takes actions in an environment and receives rewards. There is no dataset of correct answers, only consequences. The vocabulary is fixed and worth learning once. <b>Agent</b> is the decider, <b>environment</b> the world it acts in, <b>state</b> the situation right now, <b>action</b> what it does, <b>reward</b> the score it gets back, <b>policy</b> its strategy for choosing.</p>
+
+  <details class="branch p-rl" open>
+    <summary><span>Value-based methods</span><span class="cnt">2 models</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">Learn how much each situation-and-action is worth, then always pick the most valuable action.</p>
+      <div class="node">
+        <h4>Q-learning <span class="tag rl">table of values</span></h4>
+        <p class="what">Builds a table: for each state, the expected long-run reward of each possible action.</p>
+        <p class="ex"><b>Example</b>A lift controller. State = which floors have waiting passengers and where the car is. Action = up, down, or hold. After thousands of simulated days the table contains entries like "car on floor 3, calls waiting on 7 → going up is worth 14.2 points, holding is worth 2.1". It then just reads off the best action. Works only when the number of states is small enough to enumerate.</p>
+      </div>
+      <div class="node">
+        <h4>Deep Q-Network (DQN) <span class="tag rl">neural table</span></h4>
+        <p class="what">Replaces that table with a neural network, so the state can be something huge like a screen of pixels.</p>
+        <p class="ex"><b>Example</b>DeepMind's Atari agents. The state is the raw screen image, far too many possible states to tabulate, so a network estimates the value of each joystick action from the pixels. The agent learned to play Breakout from nothing but the score.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-rl">
+    <summary><span>Policy-based and actor-critic</span><span class="cnt">4 models</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">Instead of scoring every action, learn the strategy directly.</p>
+      <div class="node">
+        <h4>REINFORCE / policy gradient <span class="tag rl">direct strategy</span></h4>
+        <p class="what">Adjust the strategy so actions that preceded good outcomes become more likely.</p>
+        <p class="ex"><b>Example</b>A robot arm learning to pour. Rather than scoring every possible wrist angle, it nudges the probabilities of the movements it just made up or down depending on whether liquid ended up in the glass. Necessary when actions are continuous, a wrist angle has infinite possible values, so there is no table to build.</p>
+      </div>
+      <div class="node">
+        <h4>PPO, Proximal Policy Optimization <span class="tag rl">the workhorse</span></h4>
+        <p class="what">Policy gradient with a safety clamp that prevents any single update from changing the strategy too drastically.</p>
+        <p class="ex"><b>Example</b>Plain policy gradients can catastrophically overcorrect after one lucky episode and destroy weeks of learning. PPO limits how far the new strategy may move from the old one per update. It is stable enough to be the default in robotics, and it is the algorithm used to fine-tune chatbots on human feedback.</p>
+      </div>
+      <div class="node">
+        <h4>Actor-critic, A3C, SAC <span class="tag rl">two networks</span></h4>
+        <p class="what">One network chooses actions (actor), a second judges how good the situation is (critic), and the critic's judgement trains the actor.</p>
+        <p class="ex"><b>Example</b>An autonomous drone. The actor picks thrust and tilt. The critic estimates how promising the current position is. Instead of waiting until the flight ends to learn anything, the actor gets feedback at every step from the critic. Far faster learning than waiting for the final reward.</p>
+      </div>
+      <div class="node">
+        <h4>Model-based RL, AlphaZero, MuZero <span class="tag rl">plans ahead</span></h4>
+        <p class="what">The agent learns a model of how the environment behaves and simulates futures before acting.</p>
+        <p class="ex"><b>Example</b>AlphaZero plays chess by internally simulating candidate continuations many moves deep, guided by a network that evaluates positions, rather than reacting move by move. MuZero goes further and learns the rules of the game itself from experience without ever being told them.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-rl">
+    <summary><span>RLHF, where RL meets language models</span><span class="cnt">1 method</span></summary>
+    <div class="branch-body">
+      <div class="node">
+        <h4>Reinforcement learning from human feedback <span class="tag gen">alignment</span></h4>
+        <p class="what">Humans rank model outputs; those rankings train a reward model; the language model is then optimised against that reward.</p>
+        <p class="ex"><b>Example</b>A raw LLM trained only on next-token prediction will happily continue a question with more questions, because that is what text on the internet does. Humans are shown pairs of answers and pick the better one. Those preferences train a reward model, and PPO then tunes the LLM to score well against it. This step is what turns a text-continuation engine into an assistant that answers you.</p>
+        <p class="tell"><b>This is the bridge</b> between the RL section and the generative AI section. Worth remembering that the two halves of this file meet here.</p>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 6 ============ -->
+<section id="ens">
+  <h2 class="sec">Combining models</h2>
+  <h3 class="sect">Ensembles</h3>
+  <p class="lede">Not a model type, but a strategy for combining models. It cuts across everything above, and it is why random forests and XGBoost, the two most-used tabular models in industry, work as well as they do.</p>
+
+  <details class="branch p-cross" open>
+    <summary><span>The four combination strategies</span><span class="cnt">4 methods</span></summary>
+    <div class="branch-body">
+      <div class="node">
+        <h4>Bagging <span class="tag">parallel, independent</span></h4>
+        <p class="what">Train many copies of the same model on different random samples of the data, then average or vote.</p>
+        <p class="ex"><b>Example</b>Ask 500 analysts to forecast next quarter, each given a different random two-thirds of the history. Individually some will be badly wrong in different directions; the average is steadier than any one of them. <b>Random forest is bagging applied to decision trees.</b> The models never see each other and can be trained in parallel.</p>
+        <p class="tell"><b>Fixes variance</b>, meaning models that are individually erratic.</p>
+      </div>
+      <div class="node">
+        <h4>Boosting <span class="tag">sequential, corrective</span></h4>
+        <p class="what">Train models one after another, each focused on what the previous ones got wrong.</p>
+        <p class="ex"><b>Example</b>Analyst 1 makes a forecast. Analyst 2 is given only analyst 1's errors and told to predict those. Analyst 3 predicts what's still wrong after 1 and 2. Sum all their outputs. <b>XGBoost, LightGBM and CatBoost are all boosting.</b> Cannot be parallelised across models, because each one needs the previous one's mistakes.</p>
+        <p class="tell"><b>Fixes bias</b>, meaning models that are consistently, systematically off. This is the single most useful distinction in the section: bagging is parallel and averages away noise, boosting is sequential and chases errors.</p>
+      </div>
+      <div class="node">
+        <h4>Stacking <span class="tag">a model of models</span></h4>
+        <p class="what">Run several different model types, then train a final model whose inputs are their predictions.</p>
+        <p class="ex"><b>Example</b>A random forest, a logistic regression and a neural network each predict churn probability. A small final model learns that the forest is more reliable for long-tenure customers while the neural net is better for new ones, and weights them accordingly per case. The combiner learns <em>when to trust whom</em>.</p>
+      </div>
+      <div class="node">
+        <h4>Voting / averaging <span class="tag">the simple one</span></h4>
+        <p class="what">Take several finished models and just average their outputs, or take a majority vote.</p>
+        <p class="ex"><b>Example</b>Three fraud models you already have in production. Flag a transaction when at least two say fraud. No extra training, no combiner model, often a worthwhile accuracy gain for an afternoon of work.</p>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 7 ============ -->
+<section id="dl">
+  <h2 class="sec">Architectures</h2>
+  <h3 class="sect">Deep learning architectures</h3>
+  <p class="lede">A neural network is layers of simple units, each passing weighted numbers to the next, with the weights adjusted until output matches target. "Deep" just means many layers. What distinguishes the architectures below is how the layers are <em>wired</em>, and each wiring suits a different shape of data.</p>
+
+  <div class="callout">Deep learning is not a separate paradigm. A neural network can be supervised, unsupervised, self-supervised or reinforcement-driven. It is a <b>family of model shapes</b>, orthogonal to how it learns.</div>
+
+  <details class="branch p-dl" open>
+    <summary><span>Foundational architectures</span><span class="cnt">4 types</span></summary>
+    <div class="branch-body">
+      <div class="node">
+        <h4>Feedforward network / MLP <span class="tag dl">the plain one</span></h4>
+        <p class="what">Every unit in a layer connects to every unit in the next. Data flows one way, input to output.</p>
+        <p class="ex"><b>Example</b>Predicting loan default from 30 numeric columns. 30 inputs → a layer of 64 units → a layer of 32 → one output between 0 and 1. It knows nothing about ordering or position, shuffle the columns and it learns equally well, which is exactly why it is wrong for images and text where position carries meaning.</p>
+      </div>
+      <div class="node">
+        <h4>Convolutional neural network (CNN) <span class="tag dl">grids and images</span></h4>
+        <p class="what">Slides small filters across the input so that the same pattern is recognised anywhere it appears.</p>
+        <p class="ex"><b>Example</b>Detecting a crack in a weld photo. A small filter learns "edge", and because the same filter is swept across the whole image, an edge is detected whether it is top-left or bottom-right. Early layers find edges, middle layers find textures, deep layers find crack-shaped things. That reuse is why a CNN needs vastly fewer parameters than an MLP for the same image.</p>
+        <p class="tell"><b>Any data on a grid.</b> Images obviously, but also spectrograms of audio, and sometimes time series treated as a 1-D grid.</p>
+      </div>
+      <div class="node">
+        <h4>Recurrent network, RNN, LSTM, GRU <span class="tag dl">sequences, older</span></h4>
+        <p class="what">Processes a sequence one step at a time, carrying a memory of what came before.</p>
+        <p class="ex"><b>Example</b>Predicting the next value in a stream of sensor readings. The network reads reading 1, updates its memory, reads reading 2, and so on. Plain RNNs forget quickly over long sequences; <b>LSTM</b> adds gates that decide what to keep and what to discard, and <b>GRU</b> is a lighter version of the same idea. Largely superseded by transformers for text, still used for modest time-series work.</p>
+        <p class="tell"><b>Strictly sequential,</b> which means it cannot be parallelised across the sequence. That bottleneck is precisely what transformers removed.</p>
+      </div>
+      <div class="node">
+        <h4>Graph neural network (GNN) <span class="tag dl">networks of things</span></h4>
+        <p class="what">Works on data shaped as nodes and edges, letting each node gather information from its neighbours.</p>
+        <p class="ex"><b>Example</b>Fraud rings. The suspicious signal isn't in any single account's columns, it's that these six accounts all transfer to the same two destinations and share a device fingerprint. A GNN lets each account's representation absorb information from its connections, so the ring becomes visible. Also used for molecules, road networks and recommendation graphs.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-dl">
+    <summary><span>The transformer and its descendants</span><span class="cnt">5 types</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">The 2017 architecture behind essentially all modern language and multimodal models. Its core trick, <b>attention</b>, lets every position in a sequence look directly at every other position in one step instead of passing information along a chain.</p>
+      <div class="node">
+        <h4>Transformer <span class="tag dl">attention</span></h4>
+        <p class="what">Each word computes how relevant every other word is to it, and blends them accordingly.</p>
+        <p class="ex"><b>Example</b>"The truck couldn't fit under the bridge because <b>it</b> was too tall." To resolve what "it" refers to, the model computes an attention weight from "it" to every other word; "truck" scores high, "bridge" lower. An RNN would have had to carry that information step by step and might have lost it. Attention reaches across the whole sentence at once, and because every position is computed simultaneously, training parallelises across thousands of chips.</p>
+        <p class="tell"><b>The cost:</b> comparing every position to every other means work grows with the square of the sequence length. That is why context windows were historically limited and why the alternatives below exist.</p>
+      </div>
+      <div class="node">
+        <h4>Encoder-only, BERT family <span class="tag dl">understanding</span></h4>
+        <p class="what">Reads the whole input at once, in both directions, and produces a representation. Does not generate text.</p>
+        <p class="ex"><b>Example</b>Converting a support ticket into a 768-number embedding that captures its meaning, so you can cluster tickets, search them by similarity, or classify them. Used for search ranking and classification, not for chat.</p>
+      </div>
+      <div class="node">
+        <h4>Decoder-only, GPT, Gemini, Claude <span class="tag gen">generating</span></h4>
+        <p class="what">Generates one token at a time, each conditioned on everything produced so far.</p>
+        <p class="ex"><b>Example</b>You type a prompt; the model emits "The", then reads its own "The" and emits "invoice", then reads both and emits "was". Every chat model works this way. It can only look backwards, which is what makes generation coherent left to right.</p>
+        <p class="tell"><b>This is the architecture of every model you have actually talked to.</b></p>
+      </div>
+      <div class="node">
+        <h4>Encoder-decoder, T5, original translation models <span class="tag dl">in one form, out another</span></h4>
+        <p class="what">One stack reads the input fully, a second stack writes the output.</p>
+        <p class="ex"><b>Example</b>Translation. The encoder reads the entire German sentence and builds a meaning representation; the decoder writes the English sentence from it. Also natural for summarisation, where input and output are different lengths and forms.</p>
+      </div>
+      <div class="node">
+        <h4>Mixture of Experts (MoE) <span class="tag dl">selective activation</span></h4>
+        <p class="what">The model contains many specialised sub-networks, but each token only activates a couple of them.</p>
+        <p class="ex"><b>Example</b>A model holding 400 billion parameters across 64 expert sub-networks, where a router sends each token to only the 2 most suitable experts. You get the knowledge capacity of a huge model at the running cost of a much smaller one. Most current frontier models use this.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-dl">
+    <summary><span>Generative architectures</span><span class="cnt">4 types</span></summary>
+    <div class="branch-body">
+      <div class="node">
+        <h4>Autoencoder <span class="tag dl">compress and rebuild</span></h4>
+        <p class="what">Squeeze the input through a narrow layer and reconstruct it. Covered under dimensionality reduction, repeated here because it is the ancestor of the next one.</p>
+        <p class="ex"><b>Example</b>200 turbine sensors compressed to 10 numbers and expanded back. Good reconstruction means the 10 numbers held the essentials.</p>
+      </div>
+      <div class="node">
+        <h4>Variational autoencoder (VAE) <span class="tag gen">compress into a space you can sample</span></h4>
+        <p class="what">An autoencoder whose middle layer is a smooth probability distribution, so you can pick a random point in it and decode something new.</p>
+        <p class="ex"><b>Example</b>Train on thousands of chair photos. The middle layer becomes a continuous "space of chairs". Pick a point between two chairs and decode it, and you get a plausible chair that never existed. A plain autoencoder's middle layer has gaps, sample it and you get noise.</p>
+      </div>
+      <div class="node">
+        <h4>Generative adversarial network (GAN) <span class="tag gen">forger vs detective</span></h4>
+        <p class="what">Two networks compete: one generates fakes, the other tries to spot them. Both improve until the fakes pass.</p>
+        <p class="ex"><b>Example</b>A generator produces fake faces; a discriminator judges real versus fake. Early on the fakes are obvious blobs. As the discriminator sharpens, the generator is forced to improve, and after many rounds it produces photorealistic faces. Dominant for image generation until roughly 2022, now largely replaced by diffusion, which trains far more stably.</p>
+      </div>
+      <div class="node">
+        <h4>Diffusion model <span class="tag gen">denoising</span></h4>
+        <p class="what">Learns to remove noise. Start from pure static and repeatedly denoise until an image appears.</p>
+        <p class="ex"><b>Example</b>Training: take a real photo and add noise in 1,000 small steps until it is static; teach the network to reverse one step. Generating: start with pure static and apply that learned reversal 1,000 times, steered by the text prompt, and a photo of the requested subject emerges. <b>Imagen, Stable Diffusion, Midjourney and Veo all work this way.</b></p>
+        <p class="tell"><b>The current default for images and video.</b> If you remember one thing: diffusion makes pictures, transformers make text, and the newest models combine both.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-dl">
+    <summary><span>The newest wing, state space models</span><span class="cnt">2 types</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">Transformers cost grows with the square of sequence length. State space models are the serious attempt at an alternative, and as of 2026 they appear mostly in hybrids rather than replacing transformers outright.</p>
+      <div class="node">
+        <h4>Mamba / selective state space models <span class="tag dl">linear-time sequences</span></h4>
+        <p class="what">Carries a compact running state through the sequence and selectively decides what to keep, scaling linearly rather than quadratically with length.</p>
+        <p class="ex"><b>Example</b>Processing a 500,000-token document. A transformer must relate every token to every other, and the cost explodes. Mamba maintains a fixed-size state as it reads, so doubling the document roughly doubles the work instead of quadrupling it. It matches similarly-sized transformers on many language benchmarks with lower latency and memory.</p>
+        <p class="tell"><b>Think of it as an RNN that learned the lessons of the transformer era</b>: sequential state, but trainable in parallel and selective about what it remembers.</p>
+      </div>
+      <div class="node">
+        <h4>Hybrid models, Jamba, Granite 4.0, Codestral Mamba <span class="tag dl">both wirings</span></h4>
+        <p class="what">Interleave attention layers with state space layers to get precise recall and cheap long context together.</p>
+        <p class="ex"><b>Example</b>A model where most layers are Mamba blocks handling the bulk of the sequence cheaply, with occasional attention layers where exact lookups matter. As of 2026 this hybrid shape, not pure Mamba, is where state space models actually ship, transformers remain dominant overall.</p>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 8 ============ -->
+<section id="gen">
+  <h2 class="sec">Making content</h2>
+  <h3 class="sect">Generative AI</h3>
+  <p class="lede">Models that produce new content rather than a label or a number. Architecturally these are the transformers and diffusion models from the previous section; what earns them a section of their own is the layer of techniques built around using them.</p>
+
+  <details class="branch p-gen" open>
+    <summary><span>Model types by what they produce</span><span class="cnt">5 types</span></summary>
+    <div class="branch-body">
+      <div class="node">
+        <h4>Large language model (LLM) <span class="tag gen">text</span></h4>
+        <p class="what">A decoder-only transformer trained on enormous text volumes to predict the next token.</p>
+        <p class="ex"><b>Example</b>Gemini, Claude, GPT, Llama. Give it a paragraph of meeting notes and ask for action items, and it produces them, not by looking anything up, but by generating the most plausible continuation of "here are the action items:" given everything it learned during training. That is also why it can state something false with complete confidence: plausibility, not verification, is the objective it was trained on.</p>
+      </div>
+      <div class="node">
+        <h4>Text-to-image <span class="tag gen">images</span></h4>
+        <p class="what">Diffusion models steered by a text prompt.</p>
+        <p class="ex"><b>Example</b>Google's Imagen. "A coffee truck on a rainy London street at dusk" becomes an image through iterative denoising, where the text embedding steers each denoising step toward matching the description.</p>
+      </div>
+      <div class="node">
+        <h4>Text-to-video <span class="tag gen">video</span></h4>
+        <p class="what">Diffusion extended across time, so consecutive frames stay consistent.</p>
+        <p class="ex"><b>Example</b>Google's Veo. The hard part is not any single frame. It is that the truck must stay the same truck from frame 1 to frame 120, with plausible motion. The model denoises across space and time together.</p>
+      </div>
+      <div class="node">
+        <h4>Multimodal model <span class="tag gen">several input types</span></h4>
+        <p class="what">Accepts text, images, audio and video in the same context and reasons across them.</p>
+        <p class="ex"><b>Example</b>Upload a photo of a whiteboard sketch plus a spreadsheet and ask "does this design match these numbers?". The model represents both in the same internal space and answers about the relationship between them. Gemini is natively multimodal: it was trained on mixed modalities rather than bolting an image reader onto a text model.</p>
+      </div>
+      <div class="node">
+        <h4>Embedding model <span class="tag gen">meaning as numbers</span></h4>
+        <p class="what">Converts text, images or audio into a list of numbers positioned so that similar meanings sit close together.</p>
+        <p class="ex"><b>Example</b>"How do I reset my password?" and "I forgot my login" contain no shared words, but their embeddings land near each other, so a similarity search finds one when you search the other. Embeddings are the quiet infrastructure under semantic search, clustering and RAG. Not generative themselves, but nothing generative works well without them.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-gen">
+    <summary><span>Techniques around the model</span><span class="cnt">6 methods</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">You rarely train a foundation model. What you actually do is one of these.</p>
+      <div class="node">
+        <h4>Prompt engineering <span class="tag gen">no training</span></h4>
+        <p class="what">Change the instructions, not the model.</p>
+        <p class="ex"><b>Example</b>"Summarise this" produces something generic. "Summarise this incident report in 3 bullets for a non-technical executive, leading with business impact" produces something usable. Same model, same weights. Related terms: <b>zero-shot</b> (no examples given), <b>few-shot</b> (two or three worked examples included in the prompt), <b>chain of thought</b> (asking it to reason step by step before answering).</p>
+      </div>
+      <div class="node">
+        <h4>RAG, retrieval augmented generation <span class="tag gen">no training</span></h4>
+        <p class="what">Search your own documents first, paste the results into the prompt, then let the model answer from them.</p>
+        <p class="ex"><b>Example</b>An internal policy assistant. The model was never trained on your company handbook. When someone asks about parental leave, the system embeds the question, finds the three most similar handbook passages, and puts them into the prompt with "answer using only this". You get current, citable answers without retraining anything, and when the handbook changes, you re-index rather than retrain.</p>
+        <p class="tell"><b>The default answer to "the model doesn't know our data".</b> Cheaper, faster and more auditable than fine-tuning, and it is what most enterprise gen AI projects actually are.</p>
+      </div>
+      <div class="node">
+        <h4>Fine-tuning <span class="tag gen">training</span></h4>
+        <p class="what">Continue training a pretrained model on your own examples so it adopts a style, format or specialised vocabulary.</p>
+        <p class="ex"><b>Example</b>You need output in a rigid internal ticket format every time. Feed 2,000 examples of input and correctly formatted output, and the model learns the shape. Note what this is good for: <em>behaviour and format</em>. For injecting facts, RAG is usually the better tool.</p>
+      </div>
+      <div class="node">
+        <h4>PEFT and LoRA <span class="tag gen">cheap training</span></h4>
+        <p class="what">Fine-tune by training a small number of added parameters while the original model stays frozen.</p>
+        <p class="ex"><b>Example</b>Fully fine-tuning a 70-billion-parameter model means updating all 70 billion, which needs a small datacentre. LoRA freezes them and trains a thin adapter of maybe 20 million parameters, achieving most of the benefit on one machine. You can also keep several adapters and swap them per use case, over one shared base model.</p>
+      </div>
+      <div class="node">
+        <h4>Distillation <span class="tag gen">shrinking</span></h4>
+        <p class="what">Train a small model to imitate a large one's outputs.</p>
+        <p class="ex"><b>Example</b>A large model classifies 500,000 documents beautifully but costs too much to run per request. Use its outputs as training data for a much smaller model. The small one keeps most of the accuracy on that specific task at a fraction of the cost. Most "flash", "mini" and "lite" model variants come from this process.</p>
+      </div>
+      <div class="node">
+        <h4>Quantization <span class="tag gen">shrinking</span></h4>
+        <p class="what">Store the model's numbers at lower precision so it needs less memory.</p>
+        <p class="ex"><b>Example</b>Weights stored as 16-bit numbers converted to 4-bit. The model gets roughly four times smaller and faster with modest accuracy loss. This is what makes it possible to run a capable model on a laptop or a phone.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-gen">
+    <summary><span>Agents</span><span class="cnt">3 concepts</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">The step beyond generating text: the model decides on and performs actions.</p>
+      <div class="node">
+        <h4>Tool use / function calling <span class="tag gen">the mechanism</span></h4>
+        <p class="what">The model is told which functions exist and outputs a structured request to call one, which your code executes and hands back.</p>
+        <p class="ex"><b>Example</b>Asked "how many open tickets does Acme have?", the model cannot know. It is given a tool called <code>query_tickets(customer)</code>, so it emits a call to it, your system runs the query, returns 14, and the model writes the sentence. The model never queried anything. It decided <em>what</em> to call and interpreted the result.</p>
+      </div>
+      <div class="node">
+        <h4>Agent <span class="tag gen">the loop</span></h4>
+        <p class="what">A model in a loop: pick an action, observe the result, decide the next action, until the goal is met.</p>
+        <p class="ex"><b>Example</b>"Reconcile last month's invoices." The agent queries the billing system, notices three mismatches, looks each up in the ERP, finds two are timing differences, drafts a note about the third, and stops. Multiple steps, each chosen based on what the previous step returned. The difference from a chatbot is that it <em>acts</em> and then reacts to consequences.</p>
+      </div>
+      <div class="node">
+        <h4>Multi-agent systems <span class="tag gen">several agents</span></h4>
+        <p class="what">Several specialised agents with different tools and instructions, coordinated toward one goal.</p>
+        <p class="ex"><b>Example</b>A research agent gathers sources, a writing agent drafts, a critic agent checks claims against the sources, and a coordinator decides when it is done. Each has a narrow job and its own tools, which keeps any one prompt from having to do everything.</p>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 9 ============ -->
+<section id="task">
+  <h2 class="sec">Specialist problems</h2>
+  <h3 class="sect">Specialist families</h3>
+  <p class="lede">Problem types with enough distinctive structure that they developed their own methods, sitting slightly outside the clean supervised/unsupervised split.</p>
+
+  <details class="branch p-cross" open>
+    <summary><span>Time series forecasting</span><span class="cnt">5 models</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">Technically regression, but the rows are ordered in time and depend on each other, which breaks the usual assumption that rows are independent. You also cannot shuffle rows into random train and test splits, you must train on the past and test on the future.</p>
+      <div class="node">
+        <h4>ARIMA <span class="tag sup">the classic</span></h4>
+        <p class="what">Predicts the next value from a combination of recent values and recent errors, after removing trend.</p>
+        <p class="ex"><b>Example</b>Monthly units shipped for three years. ARIMA models the relationship between this month and the previous few months, plus how wrong it was recently, and projects forward. Three parameters: how many past values to use, how much differencing to remove trend, how many past errors to use.</p>
+      </div>
+      <div class="node">
+        <h4>ARIMA_PLUS <span class="tag sup">BigQuery flavour</span></h4>
+        <p class="what">Google's packaged version that handles seasonality, holidays, missing values and outliers automatically.</p>
+        <p class="ex"><b>Example</b>In BigQuery ML you write <code>CREATE MODEL ... OPTIONS(model_type='ARIMA_PLUS')</code> over a date column and a value column. It detects weekly and yearly seasonality, accounts for public holidays, cleans spikes, and returns a forecast with confidence intervals. <b>ARIMA_PLUS_XREG</b> is the same with extra explanatory columns such as price or temperature.</p>
+        <p class="tell"><b>Worth knowing:</b> this is the forecasting model name in BigQuery ML.</p>
+      </div>
+      <div class="node">
+        <h4>Exponential smoothing / Holt-Winters <span class="tag sup">weighted recency</span></h4>
+        <p class="what">A weighted average of history where recent observations count more, with separate terms for trend and season.</p>
+        <p class="ex"><b>Example</b>Hotel occupancy with a strong yearly cycle. The model holds three things, current level, current trend, seasonal pattern, and updates each as new data arrives. Simple, fast, surprisingly hard to beat on short clean series.</p>
+      </div>
+      <div class="node">
+        <h4>Prophet <span class="tag sup">business series</span></h4>
+        <p class="what">Decomposes a series into trend, seasonality and holiday effects, tolerating gaps and sudden level shifts.</p>
+        <p class="ex"><b>Example</b>Website traffic with weekly cycles, an annual pattern, Black Friday spikes, and a permanent step up when a big customer signed. Prophet handles those explicitly, and you can tell it about known future events.</p>
+      </div>
+      <div class="node">
+        <h4>Deep forecasting, DeepAR, temporal fusion transformers <span class="tag dl">many series at once</span></h4>
+        <p class="what">Neural models trained across thousands of related series at the same time so they can share patterns.</p>
+        <p class="ex"><b>Example</b>Forecasting demand for 50,000 SKUs. A new product has no history of its own, but the model learned typical launch curves from similar products, so it can forecast the new one from day one. Classical methods, which fit each series in isolation, cannot do that.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-cross">
+    <summary><span>Recommender systems</span><span class="cnt">4 approaches</span></summary>
+    <div class="branch-body">
+      <div class="node">
+        <h4>Collaborative filtering <span class="tag unsup">people like you</span></h4>
+        <p class="what">Recommends based on the behaviour of similar users, ignoring what the items actually are.</p>
+        <p class="ex"><b>Example</b>You and 400 other people all bought the same three power tools. Those 400 also bought a particular workbench, which you haven't. Recommend the workbench. The system knows nothing about what a workbench <em>is</em>, only about the pattern of who bought what.</p>
+        <p class="tell"><b>The cold start problem:</b> a brand-new user or item has no behaviour to match on, so this approach has nothing to work with.</p>
+      </div>
+      <div class="node">
+        <h4>Content-based filtering <span class="tag sup">items like this</span></h4>
+        <p class="what">Recommends items whose attributes resemble what the user already liked.</p>
+        <p class="ex"><b>Example</b>You watched three documentaries about deep-sea exploration. Recommend another documentary tagged ocean and science. Works for a brand-new item the moment it has attributes, since nobody needs to have interacted with it yet.</p>
+      </div>
+      <div class="node">
+        <h4>Matrix factorisation <span class="tag unsup">hidden themes</span></h4>
+        <p class="what">Decomposes the sparse user-item grid into hidden factors for users and items.</p>
+        <p class="ex"><b>Example</b>From viewing data alone it discovers latent dimensions that look like "slow-paced", "1980s" and "dialogue-heavy", nobody defined them. Each user gets a score on each dimension and each film does too; multiply to predict the missing ratings. <b>Available directly in BigQuery ML as <code>matrix_factorization</code>.</b></p>
+      </div>
+      <div class="node">
+        <h4>Two-tower neural retrieval <span class="tag dl">modern</span></h4>
+        <p class="what">One network embeds users, another embeds items, into the same space; recommendation becomes a nearest-neighbour lookup.</p>
+        <p class="ex"><b>Example</b>YouTube-scale recommendation. Embed the user from their history, embed every video once in advance, then find the nearest videos to the user's point. Because item embeddings are precomputed, you can search millions of candidates in milliseconds.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-cross">
+    <summary><span>Classic NLP, before transformers</span><span class="cnt">3 methods</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">Still worth knowing: these are cheap, explainable, and often sufficient.</p>
+      <div class="node">
+        <h4>Bag of words <span class="tag">counting</span></h4>
+        <p class="what">Represent a document as counts of each word, discarding all order.</p>
+        <p class="ex"><b>Example</b>"The claim was denied" becomes {the:1, claim:1, was:1, denied:1}. "Denied was the claim" produces exactly the same representation, order is gone entirely. Crude, but enough for many classification tasks and it runs instantly.</p>
+      </div>
+      <div class="node">
+        <h4>TF-IDF <span class="tag">weighted counting</span></h4>
+        <p class="what">Word counts weighted down for words that appear in every document.</p>
+        <p class="ex"><b>Example</b>Across 10,000 insurance documents "policy" appears everywhere and tells you nothing. "Subsidence" appears in 40 documents and is highly informative. TF-IDF scores the rare-but-present words higher. It is still a solid baseline for search and document classification.</p>
+      </div>
+      <div class="node">
+        <h4>Word2Vec / GloVe <span class="tag">early embeddings</span></h4>
+        <p class="what">Assigns each word a vector such that words used in similar contexts land near each other.</p>
+        <p class="ex"><b>Example</b>The famous one: the vector for "king" minus "man" plus "woman" lands near "queen". The limitation that transformers fixed: "bank" gets one single vector, so the riverbank and the financial meaning are blended into one. Transformer embeddings are context-dependent and give each occurrence its own vector.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-cross">
+    <summary><span>Computer vision tasks</span><span class="cnt">4 tasks</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">Not models but task definitions. The distinction matters because it decides how you must label your data.</p>
+      <div class="node">
+        <h4>Image classification <span class="tag sup">one label per image</span></h4>
+        <p class="ex"><b>Example</b>"Does this weld photo contain a crack, yes or no?" One answer for the whole image. Labelling means one tick per photo.</p>
+      </div>
+      <div class="node">
+        <h4>Object detection <span class="tag sup">boxes</span></h4>
+        <p class="ex"><b>Example</b>"Find every crack and draw a box around it." Output is a list of boxes with coordinates and labels. Labelling means drawing boxes by hand, dramatically more expensive than classification.</p>
+      </div>
+      <div class="node">
+        <h4>Segmentation <span class="tag sup">per pixel</span></h4>
+        <p class="ex"><b>Example</b>"Mark exactly which pixels are crack." Output is a mask, so you can measure the crack's true area. Labelling means painting the outline by hand, the most expensive of all.</p>
+      </div>
+      <div class="node">
+        <h4>Optical character recognition (OCR) <span class="tag sup">image to text</span></h4>
+        <p class="ex"><b>Example</b>Reading the invoice number from a scanned PDF. On Google Cloud this is a pretrained API, you never train anything, you call it. Document AI adds structure on top: not just the characters, but which of them is the total.</p>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 10 ============ -->
+<section id="vocab">
+  <h2 class="sec">Vocabulary</h2>
+  <h3 class="sect">The surrounding vocabulary</h3>
+  <p class="lede">Terms that appear constantly around every model above. Knowing these is most of what separates following a conversation from guessing at it.</p>
+
+  <details class="branch p-cross" open>
+    <summary><span>Data and training</span><span class="cnt">8 terms</span></summary>
+    <div class="branch-body">
+      <div class="node">
+        <h4>Feature <span class="tag">input</span></h4>
+        <p class="ex"><b>Example</b>An input column. Predicting house price, the features are floor area, bedrooms, postcode. In a spreadsheet: every column except the answer.</p>
+      </div>
+      <div class="node">
+        <h4>Label / target <span class="tag">answer</span></h4>
+        <p class="ex"><b>Example</b>The column you are predicting. For house price prediction, the price. Only supervised learning has one.</p>
+      </div>
+      <div class="node">
+        <h4>Feature engineering <span class="tag">preparation</span></h4>
+        <p class="ex"><b>Example</b>Creating better inputs before training. From a raw timestamp you derive "day of week", "is weekend", "hours since last purchase". The model never saw those columns in the source data, you built them because you know they matter. Often worth more than switching algorithms.</p>
+      </div>
+      <div class="node">
+        <h4>Train, validation, test split <span class="tag">discipline</span></h4>
+        <p class="ex"><b>Example</b>Split 100,000 rows into 70,000 for training, 15,000 for tuning choices, 15,000 never touched until the very end. The test set exists to answer "how will this do on data it has never seen". Look at it repeatedly while tuning and it stops being able to answer that.</p>
+      </div>
+      <div class="node">
+        <h4>Overfitting <span class="tag">the main failure</span></h4>
+        <p class="ex"><b>Example</b>A model scores 99% on training data and 61% on new data. It memorised rather than generalised, like a student who learned last year's exam paper by heart. The symptom is always the same: a large gap between training and test performance.</p>
+      </div>
+      <div class="node">
+        <h4>Underfitting <span class="tag">the other failure</span></h4>
+        <p class="ex"><b>Example</b>A model scores 64% on training data and 63% on new data. Both bad, no gap. The model is too simple for the pattern, a straight line through data that curves.</p>
+      </div>
+      <div class="node">
+        <h4>Hyperparameter <span class="tag">your choice</span></h4>
+        <p class="ex"><b>Example</b>Settings you pick before training, not learned from data: how many trees in the forest, how many clusters k, the learning rate. <b>Hyperparameter tuning</b> is the search for a good combination, and Vertex AI / Agent Platform automates it.</p>
+      </div>
+      <div class="node">
+        <h4>Cross-validation <span class="tag">honest measurement</span></h4>
+        <p class="ex"><b>Example</b>Split into 5 parts, train on 4 and test on the 5th, rotate five times, average the scores. Protects against getting a flattering result purely because of one lucky split. Standard practice when data is limited.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-cross">
+    <summary><span>How learning actually happens</span><span class="cnt">5 terms</span></summary>
+    <div class="branch-body">
+      <div class="node">
+        <h4>Loss function <span class="tag">the scorer</span></h4>
+        <p class="ex"><b>Example</b>A number measuring how wrong the model currently is. Predicted $400k, actual $450k, squared error 2.5 billion. Training is nothing more than the search for parameters that make this number small. Choosing the loss function is choosing what "wrong" means.</p>
+      </div>
+      <div class="node">
+        <h4>Gradient descent <span class="tag">the method</span></h4>
+        <p class="ex"><b>Example</b>Walking downhill in fog. At your position you can feel which direction slopes down; take a step that way; repeat. The landscape is the loss, your position is the parameters. Nearly all model training is this.</p>
+      </div>
+      <div class="node">
+        <h4>Learning rate <span class="tag">step size</span></h4>
+        <p class="ex"><b>Example</b>How big each downhill step is. Too large and you stride straight over the valley and bounce between slopes forever. Too small and you take a week to get anywhere. The single most influential hyperparameter in neural network training.</p>
+      </div>
+      <div class="node">
+        <h4>Epoch and batch <span class="tag">bookkeeping</span></h4>
+        <p class="ex"><b>Example</b>An <b>epoch</b> is one full pass through the training data. A <b>batch</b> is the chunk processed before updating parameters, 100,000 rows in batches of 256 means 391 updates per epoch. You can't load everything into memory at once, hence batches.</p>
+      </div>
+      <div class="node">
+        <h4>Regularisation <span class="tag">restraint</span></h4>
+        <p class="ex"><b>Example</b>Any deliberate constraint that stops a model memorising: penalising large coefficients (ridge, lasso), randomly switching off units during training (dropout), or stopping training when validation performance stops improving (early stopping). All of them trade a little training accuracy for real-world accuracy.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-cross">
+    <summary><span>Judging a model</span><span class="cnt">8 metrics</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">Different metrics for the two problem types, and the choice matters more than people expect.</p>
+      <div class="node">
+        <h4>Confusion matrix <span class="tag sup">classification</span></h4>
+        <p class="ex"><b>Example</b>A 2×2 count of what happened: true positives (flagged fraud, was fraud), false positives (flagged, wasn't), true negatives, false negatives (missed fraud). Every classification metric below is computed from these four numbers.</p>
+      </div>
+      <div class="node">
+        <h4>Accuracy <span class="tag sup">and why it misleads</span></h4>
+        <p class="ex"><b>Example</b>Percentage correct. Fraud is 0.2% of transactions, so a model that predicts "never fraud" scores 99.8% accuracy and is worthless. <b>On imbalanced data accuracy is actively misleading</b>. This is the classic trap.</p>
+      </div>
+      <div class="node">
+        <h4>Precision <span class="tag sup">classification</span></h4>
+        <p class="ex"><b>Example</b>Of everything you flagged, what fraction was right. You flagged 100 transactions and 80 were genuinely fraud, so precision is 80%. This is the metric that matters when acting on a false alarm is costly, blocking a legitimate customer's card.</p>
+      </div>
+      <div class="node">
+        <h4>Recall <span class="tag sup">classification</span></h4>
+        <p class="ex"><b>Example</b>Of everything that truly was fraud, what fraction did you catch. There were 200 frauds, you caught 80, recall is 40%. This is the metric that matters when a miss is costly, an undetected intrusion.</p>
+        <p class="tell"><b>They trade off.</b> Lower your threshold and you catch more fraud (recall up) but flag more innocents (precision down). Choosing the balance is a business decision, not a technical one.</p>
+      </div>
+      <div class="node">
+        <h4>F1 score <span class="tag sup">classification</span></h4>
+        <p class="ex"><b>Example</b>One number combining precision and recall, penalising imbalance between them. Precision 80% and recall 40% gives F1 ≈ 53%, much closer to the weaker of the two than a plain average would be.</p>
+      </div>
+      <div class="node">
+        <h4>ROC-AUC <span class="tag sup">classification</span></h4>
+        <p class="ex"><b>Example</b>A single score from 0.5 to 1.0 for how well the model separates the classes across <em>every possible threshold</em>. 0.5 is coin-flipping, 0.9 is strong. Useful when you haven't yet decided where to set the cut-off.</p>
+      </div>
+      <div class="node">
+        <h4>RMSE and MAE <span class="tag sup">regression</span></h4>
+        <p class="ex"><b>Example</b>Average error in the original units. Predicting house prices, RMSE of 30,000 means typically $30k off. <b>RMSE</b> squares errors first, so one $500k miss hurts far more than ten $50k misses. <b>MAE</b> treats all errors proportionally. Pick RMSE when big misses are disproportionately bad.</p>
+      </div>
+      <div class="node">
+        <h4>R squared <span class="tag sup">regression</span></h4>
+        <p class="ex"><b>Example</b>The share of variation the model explains. 0.75 means it accounts for three quarters of the variation in price; the remaining quarter is driven by things not in your data. Unitless, so it is comparable across problems in a way RMSE is not.</p>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 11 ============ -->
+<section id="tell">
+  <h2 class="sec">Disambiguation</h2>
+  <h3 class="sect">Telling them apart</h3>
+  <p class="lede">The distinctions that actually get confused, stated as plainly as possible. If you retain one section, retain this one.</p>
+
+  <details class="branch p-cross" open>
+    <summary><span>The pairs people mix up</span><span class="cnt">10 pairs</span></summary>
+    <div class="branch-body">
+      <div class="node">
+        <h4>Supervised vs unsupervised</h4>
+        <p class="ex"><b>The test</b>Is there an answer column in the training data? Yes → supervised. No → unsupervised. Nothing else matters for this call.</p>
+      </div>
+      <div class="node">
+        <h4>Classification vs regression</h4>
+        <p class="ex"><b>The test</b>Is the output a category or a number? "Which bucket" → classification. "How much" → regression. Careful: predicting a rating of 1 to 5 stars can legitimately be either, depending on whether you treat the stars as ordered numbers or as five labels.</p>
+      </div>
+      <div class="node">
+        <h4>Linear vs logistic regression</h4>
+        <p class="ex"><b>The test</b>Linear predicts a number. Logistic predicts a probability which you turn into a class. The word "regression" in logistic regression is a historical accident.</p>
+      </div>
+      <div class="node">
+        <h4>Bagging vs boosting</h4>
+        <p class="ex"><b>The test</b>Are the models built independently and averaged (bagging, random forest), or one after another each fixing the last one's errors (boosting, XGBoost)? Bagging parallelises; boosting cannot.</p>
+      </div>
+      <div class="node">
+        <h4>Clustering vs classification</h4>
+        <p class="ex"><b>The test</b>Do the groups already exist and have names? Assigning a ticket to one of your 8 existing categories is classification. Discovering that your customers fall into 4 groups nobody had defined is clustering.</p>
+      </div>
+      <div class="node">
+        <h4>Dimensionality reduction vs feature selection</h4>
+        <p class="ex"><b>The test</b>Reduction <em>builds new combined columns</em> (PCA makes "component 1" out of seven originals). Selection <em>keeps some originals and drops the rest</em> (lasso zeroes out 188 of 200 columns). After PCA your columns have no plain-English names; after selection they do.</p>
+      </div>
+      <div class="node">
+        <h4>Predictive vs generative AI</h4>
+        <p class="ex"><b>The test</b>Does it output a value or new content? Forecasting next month's sales is predictive. Writing the campaign email about those sales is generative. You will also see predictive AI called "discriminative" or "traditional" AI, same thing.</p>
+      </div>
+      <div class="node">
+        <h4>Fine-tuning vs RAG</h4>
+        <p class="ex"><b>The test</b>Are you changing <em>how it behaves</em> or <em>what it knows</em>? Style, tone and output format → fine-tune. Company facts that change over time → RAG. Choosing fine-tuning to inject facts is the most common expensive mistake in enterprise gen AI.</p>
+      </div>
+      <div class="node">
+        <h4>Parameters vs hyperparameters</h4>
+        <p class="ex"><b>The test</b>Who set it? Learned from the data during training → parameter (the coefficients, the network weights). Set by you before training → hyperparameter (number of trees, learning rate, k).</p>
+      </div>
+      <div class="node">
+        <h4>Overfitting vs underfitting</h4>
+        <p class="ex"><b>The test</b>Compare training score to test score. Big gap, training much better → overfitting, the model memorised. Both scores poor and similar → underfitting, the model is too simple.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-cross">
+    <summary><span>Picking a model from the problem</span><span class="cnt">a short path</span></summary>
+    <div class="branch-body">
+      <div class="node">
+        <h4>The decision path</h4>
+        <p class="ex"><b>Walk it in order</b>
+        1 · Do you have labelled answers? No → unsupervised: grouping rows is clustering, shrinking columns is PCA, finding co-occurrence is association rules, spotting outliers is anomaly detection.<br><br>
+        2 · Yes, and the answer is a number → regression. Start with linear regression as a baseline, then try gradient boosted trees.<br><br>
+        3 · Yes, and the answer is a category → classification. Start with logistic regression, then gradient boosted trees.<br><br>
+        4 · Is the data a plain table of rows and columns? → boosted trees almost certainly win. Don't reach for a neural network.<br><br>
+        5 · Is it images, audio, video or free text? → deep learning. CNN for images, transformer for text, diffusion if you need to generate images.<br><br>
+        6 · Is it ordered in time? → time series. ARIMA_PLUS in BigQuery, or a deep forecaster if you have thousands of related series.<br><br>
+        7 · Do you need new content rather than a prediction? → generative AI. Prompt it first, add RAG if it needs your data, fine-tune only if behaviour needs changing.</p>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 12 ============ -->
+<section id="gcp">
+  <h2 class="sec">Platform</h2>
+  <h3 class="sect">On Google Cloud</h3>
+  <p class="lede">Where each of these actually runs, and the four rungs of "how much code do I write".</p>
+
+  <div class="callout warn"><b>Naming, as of 2026:</b> Vertex AI is now <b>Agent Platform</b>. Looker Studio reverted to <b>Data Studio</b>. Dataproc is <b>Managed Service for Apache Spark</b>, Cloud Composer is <b>Managed Service for Apache Airflow</b>, Dataplex is <b>Knowledge Catalog</b>. Docs and older articles mix old and new names freely.</div>
+
+  <details class="branch p-cross" open>
+    <summary><span>The four rungs of AI development</span><span class="cnt">4 options</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">Google frames every AI build as a choice of how much you write yourself. Know this ladder.</p>
+      <div class="node">
+        <h4>1 · Pretrained APIs <span class="tag">no code, no training</span></h4>
+        <p class="what">Someone else's finished model, called over an API. You supply no training data at all.</p>
+        <p class="ex"><b>Example</b>Vision API to read text from a scanned invoice, Speech-to-Text to transcribe a call, Natural Language API for sentiment. You send input, get output. Choose this when your problem is generic. "read this text" is the same problem for everyone.</p>
+      </div>
+      <div class="node">
+        <h4>2 · AutoML <span class="tag">no code, your data</span></h4>
+        <p class="what">You supply labelled data, Google picks the architecture and trains it.</p>
+        <p class="ex"><b>Example</b>Classifying your specific product defects into 8 categories. No pretrained API knows your defect types, so you upload labelled images and AutoML handles the model selection and tuning. Choose it when the problem is specific to you but you have no ML engineers.</p>
+      </div>
+      <div class="node">
+        <h4>3 · BigQuery ML <span class="tag">SQL only</span></h4>
+        <p class="what">Train models with SQL statements, on data already in BigQuery, without moving it anywhere.</p>
+        <p class="ex"><b>Example</b><code>CREATE MODEL churn OPTIONS(model_type='logistic_reg') AS SELECT * FROM customers</code>. The data never leaves the warehouse. For an analyst who knows SQL but not Python, this is the shortest distance from data to a working model, and it is the natural rung for anyone coming from a BI background.</p>
+      </div>
+      <div class="node">
+        <h4>4 · Custom training on Agent Platform <span class="tag">full code</span></h4>
+        <p class="what">Your own code, your own framework, running on managed infrastructure.</p>
+        <p class="ex"><b>Example</b>A custom PyTorch architecture trained on TPUs, with your own data pipeline and loss function. Maximum control, maximum effort. Choose it only when the rungs above genuinely cannot do the job.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-cross">
+    <summary><span>What BigQuery ML can train, in SQL</span><span class="cnt">11 model types</span></summary>
+    <div class="branch-body">
+      <p class="branch-note">Every model here maps back to a family earlier in this file. Verified against Google's CREATE MODEL documentation, September 2026.</p>
+      <div class="node">
+        <h4>Regression and classification</h4>
+        <p class="ex"><b>Available</b><code>linear_reg</code>, linear regression, predict a number.<br>
+        <code>logistic_reg</code>, logistic regression, binary or multiclass classification.<br>
+        <code>boosted_tree_regressor</code> / <code>boosted_tree_classifier</code>, XGBoost.<br>
+        <code>random_forest_regressor</code> / <code>random_forest_classifier</code>, bagged trees.<br>
+        <code>dnn_regressor</code> / <code>dnn_classifier</code>, deep neural networks.<br>
+        <code>wide_and_deep</code>, combines a memorising linear part with a generalising deep part, built for recommendation-shaped problems.</p>
+      </div>
+      <div class="node">
+        <h4>Unsupervised</h4>
+        <p class="ex"><b>Available</b><code>kmeans</code>, clustering, e.g. customer segmentation.<br>
+        <code>pca</code>, dimensionality reduction.<br>
+        <code>autoencoder</code>, non-linear dimensionality reduction and anomaly detection.<br>
+        <code>matrix_factorization</code>, recommendation engines.</p>
+      </div>
+      <div class="node">
+        <h4>Time series</h4>
+        <p class="ex"><b>Available</b><code>arima_plus</code>, forecasting with automatic seasonality, holidays and outlier cleaning.<br>
+        <code>arima_plus_xreg</code>, the same plus external explanatory columns such as price or weather.</p>
+      </div>
+      <div class="node">
+        <h4>Borrowed models</h4>
+        <p class="ex"><b>Available</b><code>automl_regressor</code> / <code>automl_classifier</code>, run AutoML from SQL.<br>
+        <b>Imported models</b>, bring a TensorFlow, ONNX or XGBoost model you trained elsewhere and run predictions in BigQuery.<br>
+        <b>Remote models</b>, call a Gemini or other hosted model from inside a SQL query, so you can generate text over a table.</p>
+        <p class="tell"><b>The pattern to remember:</b> BigQuery ML covers the classical, tabular workhorses. Images, video and custom architectures belong on Agent Platform.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="branch p-cross">
+    <summary><span>The data-to-AI workflow</span><span class="cnt">3 stages</span></summary>
+    <div class="branch-body">
+      <div class="node">
+        <h4>Ingest and process</h4>
+        <p class="ex"><b>Products</b>Pub/Sub for real-time message streams, Dataflow for stream and batch processing, Managed Service for Apache Spark for large batch jobs, Cloud Data Fusion for visual pipeline building.</p>
+      </div>
+      <div class="node">
+        <h4>Store and analyse</h4>
+        <p class="ex"><b>Products</b>Cloud Storage for unstructured files. BigQuery for analytical SQL over huge tables. AlloyDB, Cloud SQL and Spanner for transactional SQL behind applications. Bigtable and Firestore for NoSQL. Looker for the semantic layer and dashboards.</p>
+      </div>
+      <div class="node">
+        <h4>Activate with AI</h4>
+        <p class="ex"><b>Products</b>Agent Platform (formerly Vertex AI) as the development platform, holding AutoML, notebooks, training, the model registry and endpoints. Gemini as the foundation model. BigQuery ML when the model can be trained in SQL where the data already lives.</p>
+      </div>
+    </div>
+  </details>
+</section>
+
+<footer>
+  <p>Built as a study companion, 2026-09-20. Model taxonomy verified current to September 2026, including state space models and hybrid architectures; BigQuery ML model list checked against Google's CREATE MODEL documentation.</p>
+  <p>Sections 1 to 6 are stable knowledge that will not date. Sections 7 and 8 move fastest, so re-check the architecture names before relying on them a year from now. Section 12 follows Google's product naming, which changes more often than the technology does.</p>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var q = document.getElementById('q');
+  var hits = document.getElementById('hits');
+  var nodes = Array.prototype.slice.call(document.querySelectorAll('.node'));
+  var branches = Array.prototype.slice.call(document.querySelectorAll('details.branch'));
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section'));
+  var openState = [];
+
+  nodes.forEach(function(n){ n.dataset.text = n.textContent.toLowerCase(); });
+  branches.forEach(function(b){ b.dataset.text = b.textContent.toLowerCase(); });
+
+  function reset(){
+    nodes.forEach(function(n){ n.classList.remove('hide'); });
+    branches.forEach(function(b){ b.classList.remove('hide'); });
+    sections.forEach(function(s){ s.classList.remove('hide'); });
+    hits.textContent = '';
+  }
+
+  q.addEventListener('input', function(){
+    var term = q.value.trim().toLowerCase();
+    if (term.length < 2){
+      reset();
+      if (openState.length){
+        branches.forEach(function(b,i){ b.open = openState[i]; });
+        openState = [];
+      }
+      return;
+    }
+    if (!openState.length){
+      openState = branches.map(function(b){ return b.open; });
+    }
+    var count = 0;
+    nodes.forEach(function(n){
+      var match = n.dataset.text.indexOf(term) > -1;
+      n.classList.toggle('hide', !match);
+      if (match) count++;
+    });
+    branches.forEach(function(b){
+      var any = b.querySelectorAll('.node:not(.hide)').length > 0;
+      b.classList.toggle('hide', !any);
+      if (any) b.open = true;
+    });
+    sections.forEach(function(s){
+      var any = s.querySelectorAll('.node:not(.hide)').length > 0;
+      s.classList.toggle('hide', !any);
+    });
+    hits.textContent = count === 0 ? 'no match' : count + (count === 1 ? ' entry' : ' entries');
+  });
+
+  document.getElementById('openAll').addEventListener('click', function(){
+    branches.forEach(function(b){ b.open = true; });
+    openState = [];
+  });
+  document.getElementById('closeAll').addEventListener('click', function(){
+    branches.forEach(function(b){ b.open = false; });
+    openState = [];
+  });
+
+  document.getElementById('theme').addEventListener('click', function(){
+    var root = document.documentElement;
+    var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var cur = root.getAttribute('data-theme') || (dark ? 'dark' : 'light');
+    root.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  });
+})();
+</script>
+</body>
+</html>

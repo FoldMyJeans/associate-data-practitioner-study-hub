@@ -1,0 +1,1043 @@
+<meta charset="utf-8">
+<title>Where Data Goes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#EDF2F4;
+  --surface:#FFFFFF;
+  --surface-2:#E2EAEE;
+  --ink:#16232B;
+  --ink-2:#4A5F6A;
+  --ink-3:#7B909B;
+  --line:#C9D7DD;
+  --line-2:#AEC1C9;
+  --accent:#0F6E7A;
+  --accent-soft:#D7EAED;
+  --cargo:#B25726;
+  --cargo-soft:#F4E1D5;
+  --good:#2C7A58;
+  --shadow:0 1px 2px rgba(22,35,43,.06),0 8px 24px -16px rgba(22,35,43,.25);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F1A20;
+    --surface:#17242C;
+    --surface-2:#1E2F38;
+    --ink:#DCE8EC;
+    --ink-2:#9AAEB8;
+    --ink-3:#6D838E;
+    --line:#2A3D48;
+    --line-2:#3A5260;
+    --accent:#47B2BE;
+    --accent-soft:#11333A;
+    --cargo:#E28C56;
+    --cargo-soft:#3A2417;
+    --good:#5CBE91;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -16px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1A20;
+  --surface:#17242C;
+  --surface-2:#1E2F38;
+  --ink:#DCE8EC;
+  --ink-2:#9AAEB8;
+  --ink-3:#6D838E;
+  --line:#2A3D48;
+  --line-2:#3A5260;
+  --accent:#47B2BE;
+  --accent-soft:#11333A;
+  --cargo:#E28C56;
+  --cargo-soft:#3A2417;
+  --good:#5CBE91;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -16px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:15px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:Archivo,"Helvetica Neue",Arial,sans-serif;text-wrap:balance;margin:0}
+h1{font-size:34px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+h2{font-size:22px;font-weight:700;letter-spacing:-.01em}
+h3{font-size:15px;font-weight:600;letter-spacing:-.005em}
+p{margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+
+/* ---------- header ---------- */
+.head{border-bottom:1px solid var(--line);background:var(--surface)}
+.head .wrap{padding-top:26px;padding-bottom:0}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:9px;
+}
+.sub{color:var(--ink-2);max-width:64ch;margin-top:10px;font-size:15px}
+.tabs{display:flex;gap:2px;margin-top:22px;overflow-x:auto;scrollbar-width:thin}
+.tab{
+  appearance:none;background:none;border:0;border-bottom:2px solid transparent;
+  font-family:"IBM Plex Sans",sans-serif;font-size:13.5px;font-weight:500;
+  color:var(--ink-3);padding:9px 13px;cursor:pointer;white-space:nowrap;
+  transition:color .15s,border-color .15s;
+}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:3px}
+
+/* ---------- panels ---------- */
+.panel{display:none;padding:34px 0 72px}
+.panel.on{display:block}
+.lede{max-width:66ch;color:var(--ink-2);margin-bottom:26px}
+.lede strong{color:var(--ink);font-weight:600}
+
+/* ---------- glossary term ---------- */
+.t{
+  border-bottom:1px dotted var(--line-2);cursor:help;color:inherit;
+}
+.t:hover,.t:focus-visible{border-bottom-color:var(--accent);color:var(--accent);outline:none}
+#tip{
+  position:fixed;z-index:90;max-width:290px;padding:10px 12px;
+  background:var(--ink);color:var(--ground);border-radius:5px;
+  font-size:12.5px;line-height:1.5;box-shadow:0 8px 30px -8px rgba(0,0,0,.45);
+  pointer-events:none;opacity:0;transition:opacity .12s;
+}
+#tip.on{opacity:1}
+#tip b{display:block;font-family:"IBM Plex Mono",monospace;font-size:11px;
+  letter-spacing:.06em;text-transform:uppercase;opacity:.72;margin-bottom:3px;font-weight:500}
+
+/* ---------- journey rail ---------- */
+.rail{display:flex;gap:0;margin-bottom:26px;border:1px solid var(--line);
+  border-radius:6px;overflow:hidden;background:var(--surface)}
+.step{
+  flex:1;appearance:none;background:none;border:0;border-right:1px solid var(--line);
+  padding:12px 10px 13px;cursor:pointer;text-align:left;
+  font-family:"IBM Plex Sans",sans-serif;transition:background .15s;min-width:0;
+}
+.step:last-child{border-right:0}
+.step:hover{background:var(--surface-2)}
+.step[aria-current="true"]{background:var(--accent-soft)}
+.step .n{
+  font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:500;
+  letter-spacing:.1em;color:var(--ink-3);display:block;
+}
+.step[aria-current="true"] .n{color:var(--accent)}
+.step .l{font-size:12.5px;font-weight:500;color:var(--ink-2);display:block;margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.step[aria-current="true"] .l{color:var(--ink);font-weight:600}
+.step:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:6px;
+  box-shadow:var(--shadow);overflow:hidden}
+.stage-hd{padding:22px 24px 20px;border-bottom:1px solid var(--line)}
+.stage-hd .where{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--cargo);margin-bottom:7px;font-weight:500;
+}
+.stage-hd p{color:var(--ink-2);margin-top:9px;max-width:66ch}
+.stage-body{display:grid;grid-template-columns:1fr 1fr;gap:0}
+@media (max-width:820px){.stage-body{grid-template-columns:1fr}}
+.half{padding:20px 24px 24px}
+.half+.half{border-left:1px solid var(--line)}
+@media (max-width:820px){.half+.half{border-left:0;border-top:1px solid var(--line)}}
+.cap{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:11px;font-weight:500;
+}
+pre.data{
+  margin:0;background:var(--surface-2);border:1px solid var(--line);border-radius:5px;
+  padding:13px 14px;overflow-x:auto;font-family:"IBM Plex Mono",monospace;
+  font-size:11.5px;line-height:1.75;color:var(--ink);tab-size:2;
+}
+.note{margin-top:13px;font-size:13.5px;color:var(--ink-2);
+  border-left:2px solid var(--cargo);padding-left:12px}
+.note strong{color:var(--ink);font-weight:600}
+.why{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:11px}
+.why li{font-size:13.5px;line-height:1.58;color:var(--ink-2);
+  display:grid;grid-template-columns:auto 1fr;gap:9px;align-items:start}
+.why .mk{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;
+  padding:1px 6px;border-radius:3px;white-space:nowrap;margin-top:2px}
+.mk.yes{background:var(--accent-soft);color:var(--accent)}
+.mk.no{background:var(--surface-2);color:var(--ink-3)}
+.why b{color:var(--ink);font-weight:600}
+.metric{display:flex;gap:26px;flex-wrap:wrap;padding:15px 24px;
+  background:var(--surface-2);border-top:1px solid var(--line)}
+.metric div{min-width:0}
+.metric .k{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:500}
+.metric .v{font-family:Archivo,sans-serif;font-size:19px;font-weight:700;
+  color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.25}
+.metric .v.hi{color:var(--accent)}
+.nav{display:flex;gap:9px;margin-top:18px}
+.btn{
+  appearance:none;font-family:"IBM Plex Sans",sans-serif;font-size:13px;font-weight:500;
+  background:var(--surface);color:var(--ink);border:1px solid var(--line-2);
+  border-radius:5px;padding:8px 15px;cursor:pointer;transition:background .15s,border-color .15s;
+}
+.btn:hover:not(:disabled){background:var(--surface-2);border-color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- map ---------- */
+figure{margin:0}
+.figbox{background:var(--surface);border:1px solid var(--line);border-radius:6px;
+  padding:22px 20px 16px;box-shadow:var(--shadow);overflow-x:auto}
+.figbox svg{display:block;width:100%;min-width:760px;height:auto;color:var(--ink)}
+figcaption{margin-top:14px;font-size:13px;color:var(--ink-2);max-width:70ch}
+.svg-chip{fill:var(--surface);stroke:var(--line-2)}
+.svg-chip-hit{cursor:help}
+.svg-chip-hit:hover .svg-chip{stroke:var(--accent);fill:var(--accent-soft)}
+.svg-pan{fill:none;stroke:var(--line-2);stroke-dasharray:3 3}
+.svg-t{fill:currentColor;font-family:"IBM Plex Sans",sans-serif;font-size:13px;font-weight:500}
+.svg-s{fill:var(--ink-3);font-family:"IBM Plex Mono",monospace;font-size:10px}
+.svg-m{fill:var(--cargo);font-family:"IBM Plex Mono",monospace;font-size:10px;
+  font-weight:500;letter-spacing:.09em}
+.svg-h{fill:var(--ink-3);font-family:"IBM Plex Mono",monospace;font-size:10px;
+  font-weight:500;letter-spacing:.12em}
+.svg-line{stroke:var(--line-2);stroke-width:1.5;fill:none}
+
+/* ---------- decision tree ---------- */
+.tree{background:var(--surface);border:1px solid var(--line);border-radius:6px;
+  box-shadow:var(--shadow);padding:26px 26px 28px;max-width:720px}
+.crumbs{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:20px;min-height:1px}
+.crumb{font-family:"IBM Plex Mono",monospace;font-size:10.5px;background:var(--surface-2);
+  color:var(--ink-2);padding:3px 9px;border-radius:3px}
+.crumb b{color:var(--ink);font-weight:500}
+.q{font-family:Archivo,sans-serif;font-size:19px;font-weight:600;letter-spacing:-.01em;
+  margin-bottom:16px}
+.opts{display:flex;flex-direction:column;gap:9px}
+.opt{
+  appearance:none;text-align:left;font-family:"IBM Plex Sans",sans-serif;font-size:14px;
+  background:var(--surface);border:1px solid var(--line-2);border-radius:5px;
+  padding:12px 15px;cursor:pointer;color:var(--ink);
+  transition:border-color .15s,background .15s;
+}
+.opt:hover{border-color:var(--accent);background:var(--accent-soft)}
+.opt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.opt span{display:block;font-size:12.5px;color:var(--ink-3);margin-top:2px}
+.opt:hover span{color:var(--ink-2)}
+.res .rname{font-family:Archivo,sans-serif;font-size:26px;font-weight:700;
+  color:var(--accent);letter-spacing:-.015em;line-height:1.15}
+.res .rwhy{margin-top:11px;color:var(--ink-2);max-width:60ch}
+.res .rdo{margin-top:18px}
+.res ul{margin:8px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.res ul li{font-size:13.5px;color:var(--ink-2);display:grid;
+  grid-template-columns:auto 1fr;gap:9px;align-items:start}
+.res ul li b{color:var(--ink);font-weight:600}
+
+/* ---------- glossary ---------- */
+.gsec{margin-bottom:34px}
+.gsec h2{margin-bottom:4px}
+.gsec .gnote{color:var(--ink-3);font-size:13px;margin-bottom:16px}
+.glist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.gitem{background:var(--surface);padding:15px 17px 16px}
+.gitem h3{color:var(--ink);margin-bottom:5px}
+.gitem p{font-size:13.5px;color:var(--ink-2);line-height:1.55}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="head">
+  <div class="wrap">
+    <div class="eyebrow">Associate Data Practitioner &middot; field guide</div>
+    <h1>Where Data Goes</h1>
+    <p class="sub">Every product name in Google Cloud's data stack exists because someone had a
+      problem the others couldn't solve. This is the map: what each thing is, why it exists,
+      when to pick it, and what the data actually looks like along the way.
+      Hover any <span class="t" data-t="bigquery">underlined term</span> for a plain-English definition.</p>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-p="journey" aria-selected="true">The journey</button>
+      <button class="tab" role="tab" data-p="map" aria-selected="false">The map</button>
+      <button class="tab" role="tab" data-p="mover" aria-selected="false">Pick a mover</button>
+      <button class="tab" role="tab" data-p="store" aria-selected="false">Pick a store</button>
+      <button class="tab" role="tab" data-p="glossary" aria-selected="false">Glossary</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ============ JOURNEY ============ -->
+<section class="panel on" id="p-journey">
+  <p class="lede">One file, followed end to end. A security vendor drops a daily log of blocked
+    phishing attempts into their own <span class="t" data-t="s3">Amazon S3</span> bucket.
+    You want a dashboard showing <strong>attempts blocked per department, per month</strong>.
+    Six stages sit between those two facts. Click through them &mdash; watch the data get
+    smaller and more useful at every hop.</p>
+
+  <div class="rail" id="rail"></div>
+  <div class="stage" id="stage"></div>
+  <div class="nav">
+    <button class="btn" id="prev">&larr; Back</button>
+    <button class="btn" id="next">Next &rarr;</button>
+  </div>
+</section>
+
+<!-- ============ MAP ============ -->
+<section class="panel" id="p-map">
+  <p class="lede">Everything on the left already exists somewhere you don't want it.
+    Everything on the right is where you want it. The four lanes are the only four ways
+    across &mdash; and which lane you're in is decided by <strong>how often it runs</strong>
+    and <strong>whether you're moving files or a live database</strong>.
+    Hover any box.</p>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 980 400" role="img" aria-label="Four transfer lanes carry data from on-premises or other clouds into Google Cloud: one-off transfers via gcloud storage or Transfer Appliance, scheduled transfers via Storage Transfer Service, change data capture via Datastream, and whole-database moves via Database Migration Service or Dataflow.">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor" opacity=".55"/>
+          </marker>
+        </defs>
+
+        <text class="svg-h" x="24" y="44">WHERE IT IS NOW</text>
+        <rect class="svg-pan" x="24" y="58" width="168" height="310" rx="5"/>
+
+        <g class="svg-chip-hit" data-t="filesystem">
+          <rect class="svg-chip" x="38" y="76" width="140" height="52" rx="4"/>
+          <text class="svg-t" x="52" y="100">File system</text>
+          <text class="svg-s" x="52" y="116">a server, a NAS</text>
+        </g>
+        <g class="svg-chip-hit" data-t="objectstore">
+          <rect class="svg-chip" x="38" y="148" width="140" height="52" rx="4"/>
+          <text class="svg-t" x="52" y="172">Object store</text>
+          <text class="svg-s" x="52" y="188">S3, Azure Blob</text>
+        </g>
+        <g class="svg-chip-hit" data-t="hdfs">
+          <rect class="svg-chip" x="38" y="220" width="140" height="52" rx="4"/>
+          <text class="svg-t" x="52" y="244">HDFS</text>
+          <text class="svg-s" x="52" y="260">a Hadoop cluster</text>
+        </g>
+        <g class="svg-chip-hit" data-t="rdbms">
+          <rect class="svg-chip" x="38" y="292" width="140" height="52" rx="4"/>
+          <text class="svg-t" x="52" y="316">Database</text>
+          <text class="svg-s" x="52" y="332">Oracle, SQL Server</text>
+        </g>
+
+        <line class="svg-line" x1="200" y1="110" x2="730" y2="110" marker-end="url(#ar)"/>
+        <line class="svg-line" x1="200" y1="192" x2="730" y2="192" marker-end="url(#ar)"/>
+        <line class="svg-line" x1="200" y1="274" x2="730" y2="274" marker-end="url(#ar)"/>
+        <line class="svg-line" x1="200" y1="356" x2="730" y2="356" marker-end="url(#ar)"/>
+
+        <text class="svg-m" x="204" y="100">ONCE, BY HAND</text>
+        <text class="svg-m" x="204" y="182">ON A SCHEDULE</text>
+        <text class="svg-m" x="204" y="264">CHANGES, CONTINUOUSLY</text>
+        <text class="svg-m" x="204" y="346">THE WHOLE DATABASE</text>
+
+        <g class="svg-chip-hit" data-t="gcloudstorage">
+          <rect class="svg-chip" x="298" y="88" width="300" height="44" rx="4"/>
+          <text class="svg-t" x="448" y="108" text-anchor="middle">gcloud storage &nbsp;&middot;&nbsp; Transfer Appliance</text>
+          <text class="svg-s" x="448" y="124" text-anchor="middle">&rarr; Cloud Storage</text>
+        </g>
+        <g class="svg-chip-hit" data-t="sts">
+          <rect class="svg-chip" x="298" y="170" width="300" height="44" rx="4"/>
+          <text class="svg-t" x="448" y="190" text-anchor="middle">Storage Transfer Service</text>
+          <text class="svg-s" x="448" y="206" text-anchor="middle">&rarr; Cloud Storage</text>
+        </g>
+        <g class="svg-chip-hit" data-t="datastream">
+          <rect class="svg-chip" x="298" y="252" width="300" height="44" rx="4"/>
+          <text class="svg-t" x="448" y="272" text-anchor="middle">Datastream</text>
+          <text class="svg-s" x="448" y="288" text-anchor="middle">&rarr; BigQuery</text>
+        </g>
+        <g class="svg-chip-hit" data-t="dms">
+          <rect class="svg-chip" x="298" y="334" width="300" height="44" rx="4"/>
+          <text class="svg-t" x="448" y="354" text-anchor="middle">Database Migration Service &nbsp;&middot;&nbsp; Dataflow</text>
+          <text class="svg-s" x="448" y="370" text-anchor="middle">&rarr; Cloud SQL, AlloyDB, BigQuery</text>
+        </g>
+
+        <text class="svg-h" x="736" y="44">WHERE YOU WANT IT</text>
+        <rect class="svg-pan" x="736" y="58" width="220" height="310" rx="5"/>
+
+        <g class="svg-chip-hit" data-t="cloudstorage">
+          <rect class="svg-chip" x="750" y="82" width="192" height="52" rx="4"/>
+          <text class="svg-t" x="764" y="106">Cloud Storage</text>
+          <text class="svg-s" x="764" y="122">files, any format</text>
+        </g>
+        <g class="svg-chip-hit" data-t="bigquery">
+          <rect class="svg-chip" x="750" y="154" width="192" height="52" rx="4"/>
+          <text class="svg-t" x="764" y="178">BigQuery</text>
+          <text class="svg-s" x="764" y="194">tables you query with SQL</text>
+        </g>
+        <g class="svg-chip-hit" data-t="cloudsql">
+          <rect class="svg-chip" x="750" y="226" width="192" height="52" rx="4"/>
+          <text class="svg-t" x="764" y="250">Cloud SQL &middot; AlloyDB</text>
+          <text class="svg-s" x="764" y="266">a live database, managed</text>
+        </g>
+        <g class="svg-chip-hit" data-t="dataflow">
+          <rect class="svg-chip" x="750" y="298" width="192" height="52" rx="4"/>
+          <text class="svg-t" x="764" y="322">Dataflow</text>
+          <text class="svg-s" x="764" y="338">the escape hatch</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption>Four lanes, and nothing else. Three of them move <em>files</em> and land in
+      Cloud Storage; only the bottom two touch a live database. The tool you need is decided by
+      the lane, not by the size of the data &mdash; size only chooses between
+      <span class="t" data-t="gcloudstorage">gcloud storage</span> and
+      <span class="t" data-t="appliance">Transfer Appliance</span> inside the top lane.</figcaption>
+  </figure>
+
+  <figure style="margin-top:40px">
+    <div class="figbox">
+      <svg viewBox="0 0 980 400" role="img" aria-label="Inside the change data capture lane: Datastream reads each source database's own write-ahead log, LogMiner for Oracle, the binary log for MySQL, logical decoding for PostgreSQL, transaction logs for SQL Server, then filters to the schemas, tables and columns you chose, normalises every vendor's number type to one unified decimal, and emits an event of metadata plus payload into BigQuery, Cloud Storage as Avro or JSON, or Dataflow for custom processing.">
+
+        <text class="svg-h" x="24" y="44">THE SOURCE&rsquo;S OWN LOG</text>
+        <rect class="svg-pan" x="24" y="58" width="200" height="310" rx="5"/>
+
+        <g class="svg-chip-hit" data-t="wal">
+          <rect class="svg-chip" x="38" y="76" width="172" height="58" rx="4"/>
+          <text class="svg-t" x="52" y="100">Oracle</text>
+          <text class="svg-s" x="52" y="118">LogMiner</text>
+        </g>
+        <g class="svg-chip-hit" data-t="wal">
+          <rect class="svg-chip" x="38" y="150" width="172" height="58" rx="4"/>
+          <text class="svg-t" x="52" y="174">MySQL</text>
+          <text class="svg-s" x="52" y="192">binary log (binlog)</text>
+        </g>
+        <g class="svg-chip-hit" data-t="wal">
+          <rect class="svg-chip" x="38" y="224" width="172" height="58" rx="4"/>
+          <text class="svg-t" x="52" y="248">PostgreSQL</text>
+          <text class="svg-s" x="52" y="266">logical decoding</text>
+        </g>
+        <g class="svg-chip-hit" data-t="wal">
+          <rect class="svg-chip" x="38" y="298" width="172" height="58" rx="4"/>
+          <text class="svg-t" x="52" y="322">SQL Server</text>
+          <text class="svg-s" x="52" y="340">transaction logs</text>
+        </g>
+
+        <line class="svg-line" x1="228" y1="213" x2="264" y2="213" marker-end="url(#ar)"/>
+
+        <text class="svg-m" x="272" y="44">DATASTREAM</text>
+        <rect class="svg-pan" x="268" y="58" width="392" height="310" rx="5"/>
+
+        <g class="svg-chip-hit" data-t="selective">
+          <rect class="svg-chip" x="284" y="82" width="360" height="72" rx="4"/>
+          <text class="svg-s" x="300" y="104">1 &mdash; PICK</text>
+          <text class="svg-t" x="300" y="124">Only what you chose</text>
+          <text class="svg-s" x="300" y="142">schema &middot; table &middot; column &mdash; leave the salary column home</text>
+        </g>
+        <g class="svg-chip-hit" data-t="unifiedtypes">
+          <rect class="svg-chip" x="284" y="170" width="360" height="72" rx="4"/>
+          <text class="svg-s" x="300" y="192">2 &mdash; UNIFY</text>
+          <text class="svg-t" x="300" y="212">One type, whatever the vendor called it</text>
+          <text class="svg-s" x="300" y="230">NUMBER &middot; DECIMAL &middot; NUMERIC &nbsp;&rarr;&nbsp; decimal</text>
+        </g>
+        <g class="svg-chip-hit" data-t="eventmsg">
+          <rect class="svg-chip" x="284" y="258" width="360" height="88" rx="4"/>
+          <text class="svg-s" x="300" y="280">3 &mdash; EMIT</text>
+          <text class="svg-t" x="300" y="300">An event per change</text>
+          <text class="svg-s" x="300" y="318">metadata: table, timestamp, INSERT / UPDATE / DELETE</text>
+          <text class="svg-s" x="300" y="334">payload: the changed values, column = value</text>
+        </g>
+
+        <line class="svg-line" x1="664" y1="213" x2="700" y2="213" marker-end="url(#ar)"/>
+
+        <text class="svg-h" x="704" y="44">WHERE IT LANDS</text>
+        <rect class="svg-pan" x="704" y="58" width="252" height="310" rx="5"/>
+
+        <g class="svg-chip-hit" data-t="bigquery">
+          <rect class="svg-chip" x="718" y="86" width="224" height="58" rx="4"/>
+          <text class="svg-t" x="732" y="110">BigQuery</text>
+          <text class="svg-s" x="732" y="128">native NUMERIC &mdash; the default</text>
+        </g>
+        <g class="svg-chip-hit" data-t="avro">
+          <rect class="svg-chip" x="718" y="160" width="224" height="58" rx="4"/>
+          <text class="svg-t" x="732" y="184">Cloud Storage</text>
+          <text class="svg-s" x="732" y="202">Avro decimal, or JSON number</text>
+        </g>
+        <g class="svg-chip-hit" data-t="dataflow">
+          <rect class="svg-chip" x="718" y="234" width="224" height="58" rx="4"/>
+          <text class="svg-t" x="732" y="258">Dataflow first</text>
+          <text class="svg-s" x="732" y="276">reshape, enrich or mask in transit</text>
+        </g>
+        <g class="svg-chip-hit" data-t="eventdriven">
+          <rect class="svg-chip" x="718" y="308" width="224" height="52" rx="4"/>
+          <text class="svg-t" x="732" y="332">Something reacts</text>
+          <text class="svg-s" x="732" y="350">the change is the trigger</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption>Inside the third lane. Datastream never runs a query against your production
+      database &mdash; it reads the log the database already writes for its own crash recovery,
+      which is why a DBA agrees to it. Two modes on day one:
+      <span class="t" data-t="backfill">historical backfill</span> reads the whole table once and
+      then follows changes; changes-only starts from now. The
+      <span class="t" data-t="unifiedtypes">unified type layer</span> is the quiet headline &mdash;
+      an Oracle source and a SQL Server source land in the same BigQuery column type, so you
+      never write per-source <code>CAST</code> logic.</figcaption>
+  </figure>
+
+  <figure style="margin-top:40px">
+    <div class="figbox">
+      <svg viewBox="0 0 980 430" role="img" aria-label="Four acquired companies each run a different ERP database. One Datastream stream per source lands each one as its own raw table in the same BigQuery dataset. A thin staging view per source renames columns and converts currency using a shared exchange rate table. The four conformed views are then stacked into one curated orders table that feeds a single dashboard.">
+
+        <text class="svg-h" x="24" y="40">FOUR COMPANIES, FOUR ERPS</text>
+        <rect class="svg-pan" x="24" y="54" width="186" height="330" rx="5"/>
+        <g class="svg-chip-hit" data-t="rdbms"><rect class="svg-chip" x="38" y="70" width="158" height="52" rx="4"/>
+          <text class="svg-t" x="52" y="94">Parent company</text><text class="svg-s" x="52" y="111">SQL Server &middot; CAD</text></g>
+        <g class="svg-chip-hit" data-t="rdbms"><rect class="svg-chip" x="38" y="140" width="158" height="52" rx="4"/>
+          <text class="svg-t" x="52" y="164">Acquired A</text><text class="svg-s" x="52" y="181">Oracle &middot; EUR</text></g>
+        <g class="svg-chip-hit" data-t="rdbms"><rect class="svg-chip" x="38" y="210" width="158" height="52" rx="4"/>
+          <text class="svg-t" x="52" y="234">Acquired B</text><text class="svg-s" x="52" y="251">MySQL &middot; USD</text></g>
+        <g class="svg-chip-hit" data-t="rdbms"><rect class="svg-chip" x="38" y="280" width="158" height="52" rx="4"/>
+          <text class="svg-t" x="52" y="304">Acquired C</text><text class="svg-s" x="52" y="321">PostgreSQL &middot; GBP</text></g>
+        <text class="svg-s" x="38" y="366">nobody is migrating these onto one system</text>
+
+        <text class="svg-m" x="222" y="40">4 STREAMS</text>
+        <line class="svg-line" x1="214" y1="96"  x2="332" y2="96"  marker-end="url(#ar)"/>
+        <line class="svg-line" x1="214" y1="166" x2="332" y2="166" marker-end="url(#ar)"/>
+        <line class="svg-line" x1="214" y1="236" x2="332" y2="236" marker-end="url(#ar)"/>
+        <line class="svg-line" x1="214" y1="306" x2="332" y2="306" marker-end="url(#ar)"/>
+        <text class="svg-s" x="228" y="88">Datastream</text>
+        <text class="svg-s" x="228" y="158">Datastream</text>
+        <text class="svg-s" x="228" y="228">Datastream</text>
+        <text class="svg-s" x="228" y="298">Datastream</text>
+
+        <text class="svg-h" x="336" y="40">RAW &mdash; AS IT ARRIVED</text>
+        <rect class="svg-pan" x="336" y="54" width="180" height="330" rx="5"/>
+        <g class="svg-chip-hit" data-t="raw"><rect class="svg-chip" x="350" y="70" width="152" height="52" rx="4"/>
+          <text class="svg-s" x="364" y="92">raw.orders_parent</text><text class="svg-s" x="364" y="109">total_cad</text></g>
+        <g class="svg-chip-hit" data-t="raw"><rect class="svg-chip" x="350" y="140" width="152" height="52" rx="4"/>
+          <text class="svg-s" x="364" y="162">raw.orders_a</text><text class="svg-s" x="364" y="179">amt_eur</text></g>
+        <g class="svg-chip-hit" data-t="raw"><rect class="svg-chip" x="350" y="210" width="152" height="52" rx="4"/>
+          <text class="svg-s" x="364" y="232">raw.orders_b</text><text class="svg-s" x="364" y="249">order_total</text></g>
+        <g class="svg-chip-hit" data-t="raw"><rect class="svg-chip" x="350" y="280" width="152" height="52" rx="4"/>
+          <text class="svg-s" x="364" y="302">raw.orders_c</text><text class="svg-s" x="364" y="319">value_gbp</text></g>
+        <text class="svg-s" x="350" y="366">4 shapes. cannot be stacked yet.</text>
+
+        <line class="svg-line" x1="520" y1="96"  x2="600" y2="96"  marker-end="url(#ar)"/>
+        <line class="svg-line" x1="520" y1="166" x2="600" y2="166" marker-end="url(#ar)"/>
+        <line class="svg-line" x1="520" y1="236" x2="600" y2="236" marker-end="url(#ar)"/>
+        <line class="svg-line" x1="520" y1="306" x2="600" y2="306" marker-end="url(#ar)"/>
+
+        <text class="svg-h" x="604" y="40">STAGING &mdash; MAKE THEM MATCH</text>
+        <rect class="svg-pan" x="604" y="54" width="170" height="330" rx="5"/>
+        <g class="svg-chip-hit" data-t="staging"><rect class="svg-chip" x="616" y="70" width="146" height="52" rx="4"/>
+          <text class="svg-s" x="630" y="92">stg.orders_parent</text><text class="svg-s" x="630" y="109">amount_cad</text></g>
+        <g class="svg-chip-hit" data-t="staging"><rect class="svg-chip" x="616" y="140" width="146" height="52" rx="4"/>
+          <text class="svg-s" x="630" y="162">stg.orders_a</text><text class="svg-s" x="630" y="179">amount_cad</text></g>
+        <g class="svg-chip-hit" data-t="staging"><rect class="svg-chip" x="616" y="210" width="146" height="52" rx="4"/>
+          <text class="svg-s" x="630" y="232">stg.orders_b</text><text class="svg-s" x="630" y="249">amount_cad</text></g>
+        <g class="svg-chip-hit" data-t="staging"><rect class="svg-chip" x="616" y="280" width="146" height="52" rx="4"/>
+          <text class="svg-s" x="630" y="302">stg.orders_c</text><text class="svg-s" x="630" y="319">amount_cad</text></g>
+        <text class="svg-s" x="616" y="366">same columns. now they stack.</text>
+
+        <g class="svg-chip-hit" data-t="join">
+          <rect class="svg-chip" x="604" y="392" width="170" height="30" rx="4"/>
+          <text class="svg-s" x="618" y="412">JOIN ref.fx_rates &nbsp;&rarr;&nbsp; CAD</text>
+        </g>
+        <line class="svg-line" x1="689" y1="390" x2="689" y2="342" marker-end="url(#ar)"/>
+
+        <path class="svg-line" d="M778 96 H820 V190" marker-end="url(#ar)"/>
+        <path class="svg-line" d="M778 166 H820 V190"/>
+        <path class="svg-line" d="M778 236 H820 V190"/>
+        <path class="svg-line" d="M778 306 H820 V190"/>
+        <text class="svg-m" x="784" y="255">UNION ALL</text>
+
+        <g class="svg-chip-hit" data-t="curated">
+          <rect class="svg-chip" x="838" y="140" width="118" height="70" rx="4"/>
+          <text class="svg-t" x="852" y="166">curated.</text>
+          <text class="svg-t" x="852" y="184">orders_all</text>
+          <text class="svg-s" x="852" y="201">+ company col</text>
+        </g>
+        <line class="svg-line" x1="897" y1="216" x2="897" y2="268" marker-end="url(#ar)"/>
+        <g class="svg-chip-hit" data-t="bigquery">
+          <rect class="svg-chip" x="838" y="276" width="118" height="52" rx="4"/>
+          <text class="svg-t" x="852" y="300">One number</text>
+          <text class="svg-s" x="852" y="317">for the CFO</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption><strong>Four pipes, then one process.</strong> Not four pipelines &mdash; the
+      per-source code is thin, doing only what is <em>different</em> about that source (rename,
+      cast, convert currency). Everything common &mdash; margin, year-on-year, dedupe &mdash; is
+      written once, after the union. Note the two directions:
+      <span class="t" data-t="join">JOIN</span> adds columns sideways (an order gains its exchange
+      rate), <span class="t" data-t="unionall">UNION ALL</span> stacks rows downward (four
+      companies become one list). Making the four shapes identical is the entire job of the
+      staging layer.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ MOVER ============ -->
+<section class="panel" id="p-mover">
+  <p class="lede">Six tools move data into Google Cloud, and people mix them up constantly.
+    Three questions separate all six. Answer them.</p>
+  <div class="tree" id="t-move"></div>
+</section>
+
+<!-- ============ STORE ============ -->
+<section class="panel" id="p-store">
+  <p class="lede">Once the data has arrived, where does it live? Google sells seven storage
+    products and they are <strong>not</strong> interchangeable &mdash; each one is bad at what the
+    others are good at. Three questions again.</p>
+  <div class="tree" id="t-store"></div>
+</section>
+
+<!-- ============ GLOSSARY ============ -->
+<section class="panel" id="p-glossary">
+  <p class="lede">Every name, in one place, in plain English. If a term shows up
+    underlined anywhere else on this page, it's defined here.</p>
+  <div id="glossary"></div>
+</section>
+
+</main>
+
+<div id="tip" role="tooltip"></div>
+
+<script>
+/* ================= glossary ================= */
+const G = {
+  /* --- moving data in --- */
+  gcloudstorage:{t:"gcloud storage",c:"move",d:"A command you type to copy files into Cloud Storage. It's you, carrying boxes in your own car, manual, one command, small to medium amounts. The command is <code>gcloud storage cp</code>. Older docs call it <code>gsutil</code>; same job."},
+  sts:{t:"Storage Transfer Service",c:"move",d:"A managed service that copies files for you on a schedule, with automatic retries. It's hiring movers who come every Tuesday. Reads Amazon S3, Azure Blob Storage, HDFS and on-prem file systems, at up to tens of gigabits per second."},
+  appliance:{t:"Transfer Appliance",c:"move",d:"Google physically ships you a hardware box. You fill it with data and ship it back. It's a shipping container, not a car. For when the network genuinely cannot carry it, 500 TB on a 100 Mbps line would take about 20 months online."},
+  datastream:{t:"Datastream",c:"move",d:"Continuously streams <em>changes</em> out of a live database as they happen, it's mail forwarding, not re-shipping the house daily. The source database keeps running and barely notices, because Datastream reads its transaction log instead of running heavy queries."},
+  dms:{t:"Database Migration Service",c:"move",d:"Moves an entire database into a managed Google database and lets you switch the old one off. It's moving the whole house, plumbing included. Handles Oracle, MySQL, PostgreSQL and SQL Server."},
+  dataflow:{t:"Dataflow",c:"move",d:"A general-purpose pipeline engine with ready-made templates. The escape hatch: use it when the source isn't supported by anything else, or the data needs reshaping in transit. You write or configure a pipeline rather than filling in a form."},
+  cdc:{t:"Change data capture (CDC)",c:"move",d:"Reading a database's own write-ahead log and forwarding every INSERT, UPDATE and DELETE as it happens, instead of re-querying the whole table on a schedule. Near-real-time, and almost no load on the source, which is why a DBA will allow it when they'd refuse a nightly full extract."},
+  wal:{t:"Write-ahead log (WAL)",c:"move",d:"The running log a database writes before it changes anything, so it can recover after a crash. Datastream reads that file instead of querying your tables, which is why a DBA agrees to it. Each engine has its own: <b>LogMiner</b> (Oracle), <b>binary log</b> (MySQL), <b>logical decoding</b> (PostgreSQL), <b>transaction logs</b> (SQL Server)."},
+  backfill:{t:"Historical backfill",c:"move",d:"Datastream's day-one choice: read the whole existing table once and then follow changes, or start from now and take changes only. Backfill is the expensive part; the ongoing stream is a trickle. Changes-only is for when history already arrived some other way."},
+  selective:{t:"Selective replication",c:"move",d:"You pick what crosses the wire, at schema, table, or even column level. Replicate employee id, department and hire date; leave salary and home address on-prem. Data that never enters Google Cloud cannot leak from it, and the compliance conversation ends there."},
+  unifiedtypes:{t:"Unified data types",c:"move",d:"Four vendors spell one number four ways, Oracle <code>NUMBER</code>, MySQL <code>DECIMAL</code>, PostgreSQL <code>NUMERIC</code>, SQL Server <code>DECIMAL</code>. Datastream normalises all of them to one <code>decimal</code> on the wire, then writes it as Avro decimal, JSON number, or a native BigQuery NUMERIC. Two different source engines land in the same column type, so you never write per-source CAST logic."},
+  eventmsg:{t:"Datastream event message",c:"move",d:"Every captured change arrives in three parts: <b>generic metadata</b> (source table, timestamps), <b>source-specific metadata</b> (database, schema, table, and the change type, INSERT, UPDATE or DELETE), and the <b>payload</b> (the changed values, column name to value). The change type is the interesting bit: a nightly extract gives you current state, a change stream gives you every state the row passed through."},
+  eventdriven:{t:"Event-driven architecture",c:"move",d:"Instead of storing the change stream and querying it later, you let the change itself trigger something. An order flips to <code>shipped</code> and a downstream process reacts within seconds, no polling, no schedule."},
+  avro:{t:"Avro",c:"idea",d:"A compact binary file format for rows of data, carrying its own schema inside the file. Datastream writes changes as Avro or JSON when the destination is Cloud Storage rather than BigQuery."},
+  pubsub:{t:"Pub/Sub",c:"move",d:"Asynchronous messaging for events an app <em>emits</em>, clicks, page views, logs, telemetry. The distinction from Datastream is the trigger: a row changed in a database is Datastream, an app emitted an event is Pub/Sub. A website uses both, for different data."},
+  staging:{t:"Staging layer",c:"idea",d:"The thin per-source step that does only what is <em>different</em> about that source: rename columns, cast types, convert currency. Its whole job is to make several sources identical in shape so they can be stacked. Everything common gets written once, downstream of it."},
+  join:{t:"JOIN",c:"idea",d:"Adds <b>columns</b> sideways. For each row on the left, go find the matching row on the right and bring a column back, it is a VLOOKUP. An order joined to a rates table gains that day's exchange rate."},
+  unionall:{t:"UNION ALL",c:"idea",d:"Stacks <b>rows</b> downward, company A's rows plus company B's rows become one list. Both sides must already have the same columns, in the same order, with the same types. Plain <code>UNION</code> silently deletes rows that are identical across every column, so use <code>UNION ALL</code> on anything financial."},
+  alias:{t:"Table alias",c:"idea",d:"A nickname, as in <code>FROM raw.orders_a o</code>, now you write <code>o.cust_id</code> instead of the full name. Always defined in <code>FROM</code> or <code>JOIN</code>, never in <code>SELECT</code>, which is why a query has to be read FROM-first even though it is written SELECT-first."},
+  dataproc:{t:"Dataproc",c:"move",d:"Google runs a Hadoop or Spark cluster for you, on demand. Spin up 100 servers, run your existing Spark code unchanged, delete the cluster, pay for 40 minutes. The answer for companies with years of Hadoop code they won't rewrite."},
+
+  /* --- where it lands --- */
+  cloudstorage:{t:"Cloud Storage",c:"store",d:"A bucket that holds files, any format, up to 5 TB each, no schema required. This is the <em>data lake</em>: images, video, PDFs, raw CSVs, anything. Four storage classes (Standard, Nearline, Coldline, Archive) priced by how often you expect to read the data."},
+  bigquery:{t:"BigQuery",c:"store",d:"A serverless data warehouse. You put structured data in tables and query it with SQL; it scans terabytes in seconds. There are no servers to size or manage, and you're billed by how many bytes your query reads."},
+  cloudsql:{t:"Cloud SQL",c:"store",d:"Google runs MySQL, PostgreSQL or SQL Server for you. A normal relational database behind a normal app, without you patching a server. Regional, fine for one region, not built to span the globe."},
+  alloydb:{t:"AlloyDB",c:"store",d:"PostgreSQL, Google-tuned to be much faster and to scale further than plain Cloud SQL. Pick it when you're already on PostgreSQL and have outgrown it."},
+  spanner:{t:"Spanner",c:"store",d:"A relational database that spans the globe and still gives strong consistency, every reader sees the same value at the same moment, worldwide. Rare and expensive engineering; you pick it when global scale is a hard requirement."},
+  firestore:{t:"Firestore",c:"store",d:"A serverless NoSQL document database. Stores JSON-shaped documents rather than rows, scales automatically, and is built for app developers who want to move fast."},
+  bigtable:{t:"Bigtable",c:"store",d:"NoSQL built for enormous volumes of key-value lookups at consistent sub-10ms latency. Think IoT sensor readings or time-series at massive scale. Fast at fetching one key; bad at the ad-hoc analytical questions BigQuery answers easily."},
+
+  /* --- concepts --- */
+  s3:{t:"Amazon S3",c:"idea",d:"Amazon's object storage, AWS's equivalent of Cloud Storage. It shows up constantly in migration questions because so much of the world's data already sits there."},
+  objectstore:{t:"Object store",c:"idea",d:"Storage that holds whole files as opaque blobs with a name, rather than folders on a disk. Amazon S3, Azure Blob Storage and Cloud Storage are all object stores."},
+  filesystem:{t:"File system",c:"idea",d:"Ordinary folders and files on a server, laptop or network drive (a NAS). The most common on-prem source there is."},
+  hdfs:{t:"HDFS",c:"idea",d:"Hadoop Distributed File System, one giant file store spread across many cheap servers, keeping three copies of every block so a dead machine loses nothing. The on-prem big-data standard before cloud, and what Cloud Storage replaces."},
+  rdbms:{t:"Relational database",c:"idea",d:"Data in tables of rows and columns, with a schema you must obey, queried with SQL. Oracle, SQL Server, MySQL and PostgreSQL are the four you'll meet in the wild."},
+  sql:{t:"SQL",c:"idea",d:"The language for asking questions of tabular data. Note that it is a <em>language</em>, not a product, MySQL, PostgreSQL and SQL Server are different products that all speak it, the way Word and Google Docs both handle English."},
+  nosql:{t:"NoSQL",c:"idea",d:"Any database that isn't tables-and-SQL. Usually documents (Firestore, MongoDB) or wide-column key-value stores (Bigtable). You trade schema guarantees and joins for flexibility and scale."},
+  structured:{t:"Structured data",c:"idea",d:"Data that fits in rows and columns, with a known schema. A sales table. Goes in BigQuery or a relational database."},
+  unstructured:{t:"Unstructured data",c:"idea",d:"Documents, images, audio, video, anything with no rows and columns. Goes in Cloud Storage. SQL can't touch most of it directly."},
+  schema:{t:"Schema",c:"idea",d:"The declared shape of a table: which columns exist and what type each one is. Every BigQuery table has one; the only choice is whether you write it yourself or let BigQuery auto-detect it from the file."},
+  lake:{t:"Data lake",c:"idea",d:"A vast pool of raw, unprocessed data in whatever format it arrived in. Flexible and cheap, but you need extra tooling just to know what's in there. On Google Cloud, that's Cloud Storage."},
+  warehouse:{t:"Data warehouse",c:"idea",d:"A structured store of cleaned, pre-processed, aggregated data, built for querying and reporting. On Google Cloud, that's BigQuery."},
+  landing:{t:"Landing zone",c:"idea",d:"The first place data touches down, still completely untouched, visible only to data engineers. Keeping the original bytes is what lets you prove where a wrong number came from six months later."},
+  raw:{t:"Raw zone",c:"idea",d:"Data that has been given a schema and loaded, but not yet cleaned or trusted. Engineers and data scientists can see it. This is where bad rows get caught."},
+  curated:{t:"Curated zone",c:"idea",d:"The source of truth. Cleaned, aggregated, small, and safe for everyone to build dashboards on. If a bad value reaches here, the pipeline has failed."},
+  dataplex:{t:"Dataplex",c:"idea",d:"Google's tool for governing data spread across many buckets and datasets, one place to discover, classify, secure and track it all, without physically centralising it."},
+  ctas:{t:"CREATE TABLE AS SELECT",c:"idea",d:"A SQL statement that runs a query and saves its result as a new table. It's a frozen snapshot, it does not stay in sync with the source. Chaining scheduled CTAS statements from raw to curated is, concretely, what a data pipeline usually is."},
+  bytesscanned:{t:"Bytes scanned",c:"idea",d:"How BigQuery bills you: by the volume of data your query reads, per column touched. It's why <code>SELECT *</code> is expensive and why you pre-aggregate rather than letting fifty analysts each scan a petabyte."}
+};
+
+/* ================= journey ================= */
+const STAGES = [
+{
+  short:"Vendor's S3", where:"Amazon S3, not your infrastructure",
+  title:"The vendor writes a file",
+  intro:"Every night, the threat-intel vendor dumps that day's blocked-phishing log into a bucket they own. Nothing of yours runs here. You are a guest with read access, and the file is the entire interface.",
+  cap:"What's actually sitting there",
+  data:`s3://acme-threat-feed/daily/
+
+  phish-events-2026-09-02.csv    338 MB
+  phish-events-2026-09-03.csv    341 MB
+  phish-events-2026-09-04.csv    340 MB   <- new`,
+  note:"<strong>This is the whole contract.</strong> No API, no database login. A file appears once a day, and everything downstream depends on you noticing and collecting it.",
+  whyCap:"Why this is a problem to solve",
+  why:[["no","Manual collection","Somebody would have to remember, every single day, forever. That is not a plan, it is a person who will eventually take a holiday."],["no","Reading it in place","You could point a tool straight at the vendor's bucket. Then their outage is your outage, and their retention policy silently becomes yours."]],
+  metrics:[["Arriving","340 MB / day"],["Format","CSV, one row per event"]]
+},
+{
+  short:"Copy it over", where:"Storage Transfer Service",
+  title:"Copy it into Google Cloud",
+  intro:"You need this to happen at 2am whether or not anyone is awake, and to survive a dropped connection. That is exactly one tool's job description.",
+  cap:"The transfer job you configure, once",
+  data:`Job         phish-daily-pull
+Source      s3://acme-threat-feed/daily/
+Sink        gs://acme-landing/phish/
+Schedule    daily, 02:00
+On failure  retry, resume where it stopped
+
+Last run    2026-09-04 02:00  OK  340 MB in 47s`,
+  note:"You set this up <strong>once</strong>. It runs for years. A dropped connection at 2am is Google's problem, not a Monday-morning surprise.",
+  whyCap:"Why this tool and not the others",
+  why:[
+    ["yes","Storage Transfer Service","Scheduled, unattended, retries on its own, and Amazon S3 is a source it reads natively."],
+    ["no","gcloud storage","That's a person at a terminal. Nobody is typing a command at 2am for the next three years."],
+    ["no","Transfer Appliance","340 MB is nothing. The appliance exists for when the wire physically can't cope, hundreds of terabytes."],
+    ["no","Datastream","There's no live database here. Datastream mirrors databases; this is a file."]
+  ],
+  metrics:[["Moved","340 MB"],["Took","47 seconds"],["Human effort","Zero"]]
+},
+{
+  short:"It lands", where:"Cloud Storage, the landing zone",
+  title:"It lands, completely untouched",
+  intro:"The file is now in your bucket, byte-for-byte identical to what the vendor wrote. Nothing has been cleaned, fixed, or renamed. That restraint is deliberate.",
+  cap:"Your bucket now",
+  data:`gs://acme-landing/phish/
+
+  phish-events-2026-09-02.csv    338 MB
+  phish-events-2026-09-03.csv    341 MB
+  phish-events-2026-09-04.csv    340 MB
+
+  identical bytes. nothing changed.`,
+  note:"Six months from now a number on the dashboard will look wrong, and somebody will ask whether you broke it or the vendor did. <strong>The untouched original is the only thing that can answer that.</strong> Never clean data on the way in.",
+  whyCap:"What this zone is for",
+  why:[
+    ["yes","Evidence","The original bytes settle every future argument about whose bug it is."],
+    ["yes","Replay","Fix a bug in your logic and re-run the last two years from here. Delete the original and you can't."],
+    ["no","Not for querying","Nobody builds a dashboard on this. It's a CSV in a bucket, no schema, no SQL."]
+  ],
+  metrics:[["Stored as","Raw CSV"],["Who can see it","Data engineers only"],["After 12 months","124 GB"]]
+},
+{
+  short:"Add a schema", where:"BigQuery, the raw zone",
+  title:"Load it into a table",
+  intro:"A CSV in a bucket can't be queried. Loading it into BigQuery declares what each column is, which finally makes SQL possible, and immediately exposes how messy the vendor's data really is.",
+  cap:"raw.phish_events, first rows",
+  data:`event_ts             recipient            dept        verdict  score
+2026-09-04 08:14:02  jsmith@example.com   IT          blocked   0.97
+2026-09-04 08:19:44  mchen@example.com    it          blocked   0.91
+2026-09-04 08:21:10  rlopez@example.com   (null)      allowed   0.12
+2026-09-04 08:22:57  dpatel@example.com   Info Tech   blocked   0.88
+2026-09-04 08:24:31  kobrien@example.com  Finance     blocked   0.94`,
+  note:"Look at rows 1, 2 and 4: <strong>IT</strong>, <strong>it</strong>, <strong>Info Tech</strong>, one department, three spellings. Row 3 has no department at all. Group by that column today and you get four departments where there is one. <strong>This is why raw and curated are different tables.</strong>",
+  whyCap:"What happens to the bad rows",
+  why:[
+    ["yes","Fix what's ours","Three spellings of one department is a mapping problem. Map them and move on."],
+    ["no","Don't silently patch","A null department isn't yours to invent. Route those rows to a quarantine table and tell the vendor, defaulting it to 'Unknown' hides a real problem forever."]
+  ],
+  metrics:[["Rows / day","~1.4 million"],["After 12 months","512 M rows, 124 GB"],["Trustworthy","Not yet"]]
+},
+{
+  short:"Shrink it", where:"BigQuery, the curated zone",
+  title:"Answer the question once, at 3am",
+  intro:"The dashboard only ever asks one thing: blocked attempts per department per month. So compute that once, on a schedule, and write the tiny answer to its own table.",
+  cap:"The scheduled query, and what it produces",
+  data:`CREATE OR REPLACE TABLE curated.phish_by_dept_month AS
+SELECT
+  FORMAT_DATE('%Y-%m', event_ts)      AS month,
+  COALESCE(dept_map.clean, 'Unmapped') AS dept,
+  COUNTIF(verdict = 'blocked')         AS blocked,
+  COUNTIF(verdict = 'allowed')         AS allowed
+FROM raw.phish_events
+LEFT JOIN dept_map ON LOWER(dept) = dept_map.messy
+GROUP BY month, dept;
+
+month    dept       blocked  allowed
+2026-09  IT          12,904      318
+2026-09  Finance      8,551      204
+2026-09  Sales        6,127      189`,
+  note:"512 million rows became 340. Same answer, <strong>three million times less data</strong>. This one table is what everyone is allowed to build on.",
+  whyCap:"The rule underneath this",
+  why:[
+    ["yes","Aggregate once, read many times","One job scans the big table at 3am. Fifty analysts then scan the small one all day."],
+    ["yes","Process incrementally","Append yesterday's slice only. Re-aggregating five years of history every single night is the classic rookie mistake."],
+    ["no","Don't point dashboards at raw","Fifty people × ten refreshes × 124 GB is 62 terabytes scanned a day, to answer a question with 340 rows in it."]
+  ],
+  metrics:[["Rows","340"],["Size","40 KB"],["Runs","Nightly, ~90 seconds"]]
+},
+{
+  short:"Read it", where:"Looker Studio, Power BI, a spreadsheet",
+  title:"Someone finally looks at it",
+  intro:"The dashboard connects to one small table. It loads instantly, costs almost nothing, and every person reading it sees the same number, because there is only one table it could have come from.",
+  cap:"Blocked phishing attempts, September 2026",
+  data:`IT        ############################   12,904
+Finance   ##################             8,551
+Sales     #############                  6,127
+Ops       ########                       3,882
+HR        ####                           1,905
+
+reads 40 KB per refresh`,
+  note:"Trace it back: a 340 MB file a stranger wrote, moved by a job nobody watches, landed untouched, given a schema, cleaned against a mapping table, aggregated at 3am. <strong>Every one of those stages exists because skipping it breaks something later.</strong>",
+  whyCap:"What each stage bought you",
+  why:[
+    ["yes","Landing zone","Proof of what the vendor actually sent."],
+    ["yes","Raw zone","A place for bad data to be caught before anyone trusts it."],
+    ["yes","Curated zone","One answer, one table, cheap to read, same for everyone."]
+  ],
+  metrics:[["Scanned per load","40 KB"],["Instead of","124 GB"],["Difference","~3,000,000×", true]]
+}
+];
+
+/* ================= trees ================= */
+const TREES = {
+  move:{
+    root:"q1",
+    n:{
+      q1:{q:"What are you actually moving?",o:[
+        {a:"Files and folders",s:"CSVs, logs, images, exports, things with filenames",to:"q2"},
+        {a:"A live database",s:"Oracle, SQL Server, MySQL, PostgreSQL, MongoDB…",to:"q5"}
+      ]},
+      q2:{q:"Does it need to run unattended, on a schedule?",o:[
+        {a:"No, I'll run it myself, once",s:"A one-time load, or an occasional manual push",to:"q3"},
+        {a:"Yes, every night, forever",s:"A recurring feed nobody should have to babysit",to:"q4"}
+      ]},
+      q3:{q:"Can your network carry it in a sensible amount of time?",o:[
+        {a:"Yes, minutes or hours",s:"Megabytes to a few terabytes on a decent link",to:"r_gcloud"},
+        {a:"No, it'd take weeks or months",s:"Hundreds of TB, or a genuinely thin pipe",to:"r_appliance"}
+      ]},
+      q4:{q:"Can your network carry it in a sensible amount of time?",o:[
+        {a:"Yes",s:"The nightly volume is comfortable",to:"r_sts"},
+        {a:"No, the first load alone is enormous",s:"Years of history to seed, then daily deltas",to:"r_both"}
+      ]},
+      q5:{q:"Are you switching the source database off afterwards?",o:[
+        {a:"Yes, we're retiring it",s:"Get off the on-prem box for good",to:"q6"},
+        {a:"No, it keeps running",s:"The app still uses it; we just want the data for analytics",to:"q7"}
+      ]},
+      q6:{q:"Is it Oracle, MySQL, PostgreSQL or SQL Server?",o:[
+        {a:"Yes, one of those four",s:"",to:"r_dms"},
+        {a:"No, something else",s:"MongoDB, Cassandra, a mainframe, something proprietary",to:"r_dataflow"}
+      ]},
+      q7:{q:"Is it a database Datastream supports?",o:[
+        {a:"Yes",s:"Oracle, MySQL, PostgreSQL, SQL Server",to:"r_datastream"},
+        {a:"No",s:"Cassandra, Redis, a REST API, an app's own store",to:"r_dataflow"}
+      ]},
+
+      r_gcloud:{r:"gcloud storage",why:"You, at a terminal, moving files once. One command, done in minutes. The simplest tool that works, don't reach past it.",do:[
+        ["Run","<code>gcloud storage cp -r ./exports gs://my-bucket/</code>"],
+        ["Watch for","The moment it needs to happen on a schedule, this is the wrong tool. Switch to Storage Transfer Service."]
+      ]},
+      r_appliance:{r:"Transfer Appliance",why:"The network is the bottleneck, not the tool. Google couriers you hardware, you fill it over your fast internal LAN, you ship it back. The data travels by truck.",do:[
+        ["Order","Pick a capacity to match the job, it comes in several sizes."],
+        ["Reality check","500 TB on a 100 Mbps line is about 20 months online. The appliance makes it a fortnight."]
+      ]},
+      r_sts:{r:"Storage Transfer Service",why:"Scheduled, managed, unattended, and it reads Amazon S3, Azure Blob Storage, HDFS and on-prem file systems natively. Configure it once and stop thinking about it.",do:[
+        ["Set","Source, sink, a schedule. That's the whole job definition."],
+        ["It handles","Retries and resume-where-it-stopped. A dropped connection isn't your 3am page."],
+        ["Speed","Up to tens of gigabits per second, 'large dataset' is not a reason to avoid it."]
+      ]},
+      r_both:{r:"Transfer Appliance, then Storage Transfer Service",why:"Two different problems, so two tools. The appliance seeds years of history offline; Storage Transfer Service then keeps up with the daily trickle over the wire.",do:[
+        ["First","Bulk-load the backlog on the appliance."],
+        ["Then","Schedule the ongoing feed. The daily delta is small, it was only the initial load that was impossible."]
+      ]},
+      r_dms:{r:"Database Migration Service",why:"A full relocation, schema, data, and the changes that happen while you migrate, into Cloud SQL or AlloyDB. Then you decommission the old server.",do:[
+        ["Sources","Oracle, MySQL, PostgreSQL, SQL Server."],
+        ["Targets","Cloud SQL, AlloyDB, or BigQuery."],
+        ["The point","You stop owning a server. The database keeps working the same way."]
+      ]},
+      r_datastream:{r:"Datastream",why:"The source stays the system of record and keeps serving the app. Datastream reads its <span class='t' data-t='wal'>write-ahead log</span> and mirrors every change into BigQuery within seconds &mdash; near-zero load on the source.",do:[
+        ["Day one","<span class='t' data-t='backfill'>Backfill</span> the history first, or take changes only from now. Your call per stream."],
+        ["Pick less","<span class='t' data-t='selective'>Selective replication</span> down to the column. The salary column can stay on-prem."],
+        ["Types just work","<span class='t' data-t='unifiedtypes'>Unified data types</span> mean an Oracle source and a SQL Server source land as the same BigQuery type."],
+        ["Lands in","BigQuery, ready to query."],
+        ["Freshness","Seconds, not overnight. This is what 'change data capture' means."],
+        ["Why the DBA agrees","It reads a log file. It does not run <code>SELECT *</code> against production every night."]
+      ]},
+      r_dataflow:{r:"Dataflow",why:"Nothing else can see this source, so you use the general-purpose engine. Pick a ready-made template where one exists, or write the pipeline.",do:[
+        ["Use it when","The source has no connector, or the data must be reshaped in transit."],
+        ["Don't use it when","Datastream or DMS already handles your source, you'd be hand-building what they give you configured."],
+        ["Related","<span class='t' data-t='dataproc'>Dataproc</span> is the cousin: same idea, but for running Hadoop and Spark code you already own."]
+      ]}
+    }
+  },
+  store:{
+    root:"s1",
+    n:{
+      s1:{q:"What shape is the data?",o:[
+        {a:"Rows and columns",s:"A table. Orders, users, transactions, events",to:"s2"},
+        {a:"Files",s:"Images, video, PDFs, audio, raw exports",to:"r_gcs"}
+      ]},
+      s2:{q:"What will the data be used for?",o:[
+        {a:"Running an application",s:"Many small, fast reads and writes. Someone clicks Save and it must stick",to:"s3"},
+        {a:"Analysis and reporting",s:"Big scans, aggregations, dashboards, 'how many last quarter'",to:"s5"}
+      ]},
+      s3:{q:"Tables and SQL, or documents?",o:[
+        {a:"Tables and SQL",s:"Relationships matter, and a wrong row is unacceptable",to:"s4"},
+        {a:"Documents",s:"Each record stands alone and its shape keeps changing",to:"r_firestore"}
+      ]},
+      s4:{q:"How far does it need to scale?",o:[
+        {a:"One region is fine",s:"A normal business app",to:"r_cloudsql"},
+        {a:"Big, and we're on PostgreSQL",s:"Outgrown Cloud SQL, don't want to leave Postgres",to:"r_alloydb"},
+        {a:"Global, and always consistent",s:"Users on three continents must see the same value at once",to:"r_spanner"}
+      ]},
+      s5:{q:"Ad-hoc questions, or the same lookup a billion times?",o:[
+        {a:"Ad-hoc questions in SQL",s:"'Blocked attempts per department per month', and tomorrow, something else",to:"r_bq"},
+        {a:"One key, fetched constantly, fast",s:"Sensor readings, time-series, sub-10ms every time",to:"r_bigtable"}
+      ]},
+
+      r_gcs:{r:"Cloud Storage",why:"Files have no rows and columns, so no database can help. A bucket holds anything, up to 5 TB per object, with no schema to declare. This is your data lake.",do:[
+        ["Pick a class","Standard, Nearline, Coldline or Archive, priced by how often you'll actually read it."],
+        ["Bonus","BigQuery <em>object tables</em> can index the bucket, giving you one queryable row per file so you can join file metadata to real tables."]
+      ]},
+      r_bq:{r:"BigQuery",why:"Serverless warehouse built for scanning enormous tables and aggregating them. No servers to size. Terabytes in seconds, petabytes in minutes.",do:[
+        ["Billing","By bytes scanned, per column. Avoid <code>SELECT *</code>, it's the biggest cost lever you have."],
+        ["At scale","Partition by date, cluster on the columns you filter most, and pre-aggregate into a small table for dashboards."],
+        ["Not for","Single-row lookups in an app. It's built for scans, not for one fast fetch."]
+      ]},
+      r_bigtable:{r:"Bigtable",why:"NoSQL tuned for enormous volumes of key-value lookups at consistent sub-10ms latency. Fetching one known key, constantly, forever.",do:[
+        ["Good at","Time-series, IoT telemetry, anything written and read by a known key at huge volume."],
+        ["Bad at","The ad-hoc analytical question. Ask that in BigQuery instead."]
+      ]},
+      r_cloudsql:{r:"Cloud SQL",why:"Google runs MySQL, PostgreSQL or SQL Server for you. An ordinary relational database behind an ordinary app, minus the patching and the backups.",do:[
+        ["Pick","MySQL, PostgreSQL or SQL Server, whichever your app already speaks."],
+        ["Ceiling","Regional. If you outgrow it, AlloyDB (if you're on Postgres) or Spanner (if you need global) are the next rungs."]
+      ]},
+      r_alloydb:{r:"AlloyDB",why:"PostgreSQL, Google-tuned for far more speed and scale than Cloud SQL. Your Postgres code and tooling carry over unchanged.",do:[
+        ["Choose it when","You're already on PostgreSQL and Cloud SQL has run out of room."],
+        ["Nice detail","Postgres <code>JSONB</code> columns let you keep schema-free data inside a relational table, often the honest answer to 'should we use a document database'."]
+      ]},
+      r_spanner:{r:"Spanner",why:"Relational, global, and strongly consistent at the same time, every reader worldwide sees the same value at the same moment. Genuinely hard engineering.",do:[
+        ["Choose it when","Global scale is a hard requirement, not a nice-to-have."],
+        ["Otherwise","Cloud SQL or AlloyDB. Spanner solves a problem most systems don't have."]
+      ]},
+      r_firestore:{r:"Firestore",why:"Serverless NoSQL document store. Each record is a self-contained JSON-shaped document, scales automatically, and imposes no schema.",do:[
+        ["Good at","Records that stand alone and change shape often, catalogues, profiles, app state."],
+        ["The trade","No schema means nothing rejects a bad record, and one fact stored in a thousand documents must be updated a thousand times."]
+      ]}
+    }
+  }
+};
+
+/* ================= tooltip ================= */
+const tip = document.getElementById('tip');
+let tipFor = null;
+function showTip(el){
+  const g = G[el.getAttribute('data-t')];
+  if(!g) return;
+  tip.innerHTML = '<b>'+g.t+'</b>'+g.d;
+  tip.classList.add('on');
+  tipFor = el;
+  const r = el.getBoundingClientRect();
+  tip.style.left='0px'; tip.style.top='0px';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = r.left + r.width/2 - w/2;
+  x = Math.max(10, Math.min(x, window.innerWidth - w - 10));
+  let y = r.top - h - 9;
+  if(y < 8) y = r.bottom + 9;
+  tip.style.left = x+'px'; tip.style.top = y+'px';
+}
+function hideTip(){ tip.classList.remove('on'); tipFor=null; }
+document.addEventListener('mouseover', e=>{
+  const el = e.target.closest && e.target.closest('[data-t]');
+  if(el && el!==tipFor) showTip(el);
+});
+document.addEventListener('mouseout', e=>{
+  const el = e.target.closest && e.target.closest('[data-t]');
+  if(el) hideTip();
+});
+document.addEventListener('focusin', e=>{
+  const el = e.target.closest && e.target.closest('[data-t]');
+  if(el) showTip(el); else hideTip();
+});
+window.addEventListener('scroll', hideTip, true);
+
+/* ================= tabs ================= */
+document.querySelectorAll('.tab').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected', x===b));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+    document.getElementById('p-'+b.dataset.p).classList.add('on');
+    hideTip();
+    window.scrollTo({top:0,behavior:'instant'});
+  });
+});
+
+/* ================= journey render ================= */
+let cur = 0;
+const rail = document.getElementById('rail');
+STAGES.forEach((s,i)=>{
+  const b = document.createElement('button');
+  b.className='step';
+  b.innerHTML = '<span class="n">'+String(i+1).padStart(2,'0')+'</span><span class="l">'+s.short+'</span>';
+  b.addEventListener('click', ()=>{cur=i;draw();});
+  rail.appendChild(b);
+});
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function draw(){
+  const s = STAGES[cur];
+  rail.querySelectorAll('.step').forEach((b,i)=>b.setAttribute('aria-current', i===cur));
+  document.getElementById('stage').innerHTML =
+    '<div class="stage-hd"><div class="where">'+s.where+'</div>'+
+      '<h2>'+s.title+'</h2><p>'+s.intro+'</p></div>'+
+    '<div class="stage-body">'+
+      '<div class="half"><div class="cap">'+s.cap+'</div>'+
+        '<pre class="data">'+esc(s.data)+'</pre>'+
+        '<p class="note">'+s.note+'</p></div>'+
+      '<div class="half"><div class="cap">'+s.whyCap+'</div><ul class="why">'+
+        s.why.map(w=>'<li><span class="mk '+w[0]+'">'+(w[0]==='yes'?'use':'not')+'</span>'+
+          '<span><b>'+w[1]+'</b> &mdash; '+w[2]+'</span></li>').join('')+
+      '</ul></div>'+
+    '</div>'+
+    '<div class="metric">'+s.metrics.map(m=>'<div><div class="k">'+m[0]+'</div>'+
+      '<div class="v'+(m[2]?' hi':'')+'">'+m[1]+'</div></div>').join('')+'</div>';
+  document.getElementById('prev').disabled = cur===0;
+  document.getElementById('next').disabled = cur===STAGES.length-1;
+}
+document.getElementById('prev').addEventListener('click',()=>{if(cur>0){cur--;draw();}});
+document.getElementById('next').addEventListener('click',()=>{if(cur<STAGES.length-1){cur++;draw();}});
+draw();
+
+/* ================= trees render ================= */
+function mountTree(key, elId){
+  const T = TREES[key], el = document.getElementById(elId);
+  let node = T.root, path = [];
+  function render(){
+    const n = T.n[node];
+    let h = '<div class="crumbs">'+path.map(p=>'<span class="crumb">'+p+'</span>').join('')+'</div>';
+    if(n.r){
+      h += '<div class="res"><div class="rname">'+n.r+'</div>'+
+           '<p class="rwhy">'+n.why+'</p><div class="rdo"><ul>'+
+           n.do.map(d=>'<li><span class="mk yes">'+d[0]+'</span><span>'+d[1]+'</span></li>').join('')+
+           '</ul></div></div>'+
+           '<div class="nav"><button class="btn" data-act="reset">Start over</button>'+
+           '<button class="btn" data-act="back">&larr; Back</button></div>';
+    } else {
+      h += '<div class="q">'+n.q+'</div><div class="opts">'+
+        n.o.map((o,i)=>'<button class="opt" data-i="'+i+'">'+o.a+
+          (o.s?'<span>'+o.s+'</span>':'')+'</button>').join('')+'</div>';
+      if(path.length) h += '<div class="nav"><button class="btn" data-act="reset">Start over</button>'+
+        '<button class="btn" data-act="back">&larr; Back</button></div>';
+    }
+    el.innerHTML = h;
+  }
+  const hist = [];
+  el.addEventListener('click', e=>{
+    const o = e.target.closest('.opt');
+    if(o){
+      const n = T.n[node];
+      const pick = n.o[+o.dataset.i];
+      hist.push(node); path.push(pick.a);
+      node = pick.to; render(); return;
+    }
+    const b = e.target.closest('.btn');
+    if(!b) return;
+    if(b.dataset.act==='reset'){ node=T.root; path=[]; hist.length=0; render(); }
+    if(b.dataset.act==='back' && hist.length){ node=hist.pop(); path.pop(); render(); }
+  });
+  render();
+}
+mountTree('move','t-move');
+mountTree('store','t-store');
+
+/* ================= glossary render ================= */
+const CATS = [
+  ["move","Moving data in","The six tools that get data from wherever it lives into Google Cloud, plus the ideas behind them."],
+  ["store","Where data lands","Google sells seven storage products. Each is bad at what the others are good at."],
+  ["idea","The ideas","Concepts and jargon that show up everywhere and get assumed."]
+];
+document.getElementById('glossary').innerHTML = CATS.map(c=>{
+  const items = Object.keys(G).filter(k=>G[k].c===c[0])
+    .map(k=>'<div class="gitem"><h3>'+G[k].t+'</h3><p>'+G[k].d+'</p></div>').join('');
+  return '<div class="gsec"><h2>'+c[1]+'</h2><p class="gnote">'+c[2]+'</p>'+
+         '<div class="glist">'+items+'</div></div>';
+}).join('');
+
+/* make every inline term keyboard reachable */
+document.querySelectorAll('span.t').forEach(s=>s.setAttribute('tabindex','0'));
+</script>
